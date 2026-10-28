@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefLink AI - Hệ Sinh Thái Cứu Trợ</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* TỔNG QUAN */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* THANH NAVBAR */
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 30px; background-color: #1a1a1a; border-bottom: 1px solid #333; z-index: 1000;
+        }
+        .logo { font-size: 22px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .logo i { color: #e53935; font-size: 24px; }
+
+        /* CÔNG TẮC MẠNG */
+        .network-toggle {
+            display: flex; align-items: center; gap: 10px; background: #222; 
+            padding: 6px 16px; border-radius: 20px; border: 1px solid #444;
+        }
+        #network-status { font-weight: 600; font-size: 14px; color: #4CAF50; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-left: 5px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #555; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #4CAF50; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* CỤM BÊN PHẢI */
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .notification-bell { position: relative; cursor: pointer; color: #fff; font-size: 20px; transition: 0.3s; }
+        .notification-bell:hover { color: #e53935; }
+        .notification-bell .badge {
+            position: absolute; top: -6px; right: -8px; background-color: #e53935;
+            color: white; font-size: 10px; font-weight: bold; padding: 2px 5px;
+            border-radius: 50%; border: 2px solid #1a1a1a; display: none;
+        }
+        .btn { padding: 8px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-signin { background-color: transparent; color: #fff; border: 1px solid #555; }
+        .btn-signup { background-color: #e53935; color: #fff; }
+
+        /* TABS */
+        .tabs-container { display: flex; background-color: #111; border-bottom: 2px solid #333; }
+        .tab-btn {
+            flex: 1; padding: 15px; background: none; border: none; color: #aaa;
+            font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.3s; border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active { color: #fff; border-bottom-color: #e53935; background-color: #1e1e1e; }
+
+        /* VIEWPORT (VÙNG HIỂN THỊ CHÍNH) */
+        .viewport { flex: 1; position: relative; overflow-y: auto; background-color: #121212; display: flex; flex-direction: column; }
+        
+        .view-section { display: none; width: 100%; height: 100%; }
+        .view-section.active { display: flex; }
+
+        /* FORM SOS */
+        #sos-view { justify-content: center; align-items: flex-start; padding: 30px 20px; }
+        .form-container { background-color: #1e1e1e; width: 100%; max-width: 600px; border-radius: 12px; padding: 30px; border: 1px solid #333; }
+        .form-header { text-align: center; margin-bottom: 25px; }
+        .form-header h2 { color: #e53935; font-size: 26px; margin-bottom: 5px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #ddd; font-size: 14px; }
+        input[type="tel"], textarea { width: 100%; background-color: #2a2a2a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-size: 15px; outline: none; }
+        textarea { resize: vertical; min-height: 90px; }
+        input:focus, textarea:focus { border-color: #e53935; }
+
+        .needs-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .need-tag { background-color: #2a2a2a; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        .need-tag.selected { background-color: #e53935; border-color: #e53935; color: white; }
+
+        .multimodal-tools { display: flex; gap: 10px; }
+        .tool-btn { flex: 1; background-color: #2a2a2a; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .tool-btn.active { background-color: rgba(76, 175, 80, 0.15); border-color: #4CAF50; color: #4CAF50; }
+        .btn-submit-sos { width: 100%; background-color: #e53935; color: white; font-size: 22px; font-weight: bold; padding: 15px; border: none; border-radius: 8px; cursor: pointer; letter-spacing: 1px; margin-top: 15px; }
+
+        /* VIEW BẢN ĐỒ */
+        #map-view { flex-direction: row; }
+        #map { flex: 2; height: 100%; width: 100%; background-color: #222; z-index: 1; }
+
+        .dashboard-sidebar { flex: 1; max-width: 400px; background-color: #1e1e1e; border-left: 1px solid #333; display: flex; flex-direction: column; height: 100%; z-index: 2; }
+        .sidebar-header { padding: 15px; background-color: #1a1a1a; border-bottom: 1px solid #333; }
+        
+        /* 3 CỘT THỐNG KÊ */
+        .stat-boxes { display: flex; gap: 8px; margin-top: 10px; }
+        .stat-box { flex: 1; padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 11px; border: 1px solid #444; }
+        .stat-num { font-size: 18px; display: block; margin-top: 5px; color: #fff; }
+        
+        .sos-feed { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .feed-item { background: #2a2a2a; padding: 12px; border-radius: 8px; font-size: 14px; border-left: 4px solid; }
+
+        /* Tùy chỉnh Marker Ghim */
+        .custom-pin { border-radius: 50%; border: 2px solid white; }
+        
+        /* RESPONSIVE */
+        @media screen and (max-width: 768px) {
+            .navbar { flex-wrap: wrap; padding: 10px; }
+            .network-toggle { order: 3; width: 100%; justify-content: center; margin-top: 10px; }
+            .nav-actions { display: none; }
+            #map-view { flex-direction: column; }
+            #map { min-height: 50vh; }
+            .dashboard-sidebar { max-width: 100%; border-left: none; border-top: 1px solid #333; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo"><i class="fa-solid fa-microchip"></i> ReliefLink AI</div>
+        <div class="network-toggle">
+            <i class="fa-solid fa-wifi" id="wifi-icon" style="color: #4CAF50;"></i>
+            <span id="network-status">Đang Online</span>
+            <label class="switch">
+                <input type="checkbox" id="network-checkbox" checked onchange="toggleNetwork()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="nav-right">
+            <div class="notification-bell">
+                <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-signin">Đăng nhập</button>
+                <button class="btn btn-signup">Đăng ký</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('sos-view', this)"><i class="fa-solid fa-triangle-exclamation"></i> CỔNG SOS</button>
+        <button class="tab-btn" onclick="switchTab('map-view', this)"><i class="fa-solid fa-map-location-dot"></i> BẢN ĐỒ ĐIỀU PHỐI</button>
+    </div>
+
+    <main class="viewport">
+        <!-- FORM SOS -->
+        <section id="sos-view" class="view-section active">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>KÊU GỌI CỨU TRỢ</h2>
+                    <p>Hệ thống AI sẽ tự động phân tích và điều phối nguồn lực</p>
+                </div>
+                <div class="input-group">
+                    <label>Số điện thoại liên hệ:</label>
+                    <input type="tel" id="phone-number" placeholder="Nhập số điện thoại...">
+                </div>
+                <div class="input-group">
+                    <label>Mô tả tình trạng:</label>
+                    <textarea id="sos-text" placeholder="Mô tả ngắn gọn tình hình hiện tại..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Nhu yếu phẩm:</label>
+                    <div class="needs-grid">
+                        <div class="need-tag" onclick="this.classList.toggle('selected')">Y tế / Cấp cứu</div>
+                        <div class="need-tag" onclick="this.classList.toggle('selected')">Lương thực</div>
+                        <div class="need-tag" onclick="this.classList.toggle('selected')">Nước sạch</div>
+                        <div class="need-tag" onclick="this.classList.toggle('selected')">Phương tiện di tản</div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Dữ liệu đính kèm:</label>
+                    <div class="multimodal-tools">
+                        <button class="tool-btn" id="btn-gps" onclick="getLocation(this)">
+                            <i class="fa-solid fa-location-crosshairs"></i><span>Tọa độ</span>
+                        </button>
+                        <button class="tool-btn"><i class="fa-solid fa-camera"></i><span>Hình ảnh</span></button>
+                        <button class="tool-btn"><i class="fa-solid fa-microphone"></i><span>Giọng nói</span></button>
+                    </div>
+                </div>
+                <button class="btn-submit-sos" onclick="submitSOS()">SOS KHẨN CẤP</button>
+            </div>
+        </section>
+
+        <!-- MAP & DASHBOARD -->
+        <section id="map-view" class="view-section">
+            <div id="map"></div>
+            <div class="dashboard-sidebar">
+                <div class="sidebar-header">
+                    <h3 style="color:#fff;"><i class="fa-solid fa-chart-pie"></i> Thống kê tổng quan</h3>
+                    
+                    <div class="stat-boxes">
+                        <div class="stat-box" style="background: rgba(229,57,53,0.1); color: #e53935; border-color: #e53935;">
+                            ĐỎ (KHẨN) <span class="stat-num" id="stat-red">0</span>
+                        </div>
+                        <div class="stat-box" style="background: rgba(253,216,53,0.1); color: #FDD835; border-color: #FDD835;">
+                            VÀNG (VẬT TƯ) <span class="stat-num" id="stat-yellow">0</span>
+                        </div>
+                        <div class="stat-box" style="background: rgba(67,160,71,0.1); color: #4CAF50; border-color: #4CAF50;">
+                            XANH (AN TOÀN) <span class="stat-num" id="stat-green">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sos-feed" id="sos-feed">
+                    <div id="empty-feed" style="text-align: center; color: #666; font-size: 13px; margin-top: 20px;">Chưa có dữ liệu sự cố...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Thư viện Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let isOnline = true, map;
+        let counts = { red: 0, yellow: 0, green: 0 };
+        let simLat = 21.0285, simLng = 105.8542; // Tọa độ giả lập (Hà Nội)
+
+        function switchTab(viewId, btn) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            btn.classList.add('active');
+            
+            // Xử lý nạp bản đồ khi click sang Tab Bản đồ
+            if (viewId === 'map-view') {
+                if (!map) {
+                    initMap();
+                }
+                // HÀM QUAN TRỌNG: Buộc Leaflet tính toán lại kích thước sau khi hiển thị Tab
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 300);
+            }
+        }
+
+        function toggleNetwork() {
+            isOnline = document.getElementById("network-checkbox").checked;
+            const st = document.getElementById("network-status"), icon = document.getElementById("wifi-icon");
+            if (isOnline) {
+                st.innerText = "Đang Online"; st.style.color = "#4CAF50"; icon.className = "fa-solid fa-wifi"; icon.style.color = "#4CAF50";
+            } else {
+                st.innerText = "Offline"; st.style.color = "#e53935"; icon.className = "fa-solid fa-wifi-slash"; icon.style.color = "#e53935";
+            }
+        }
+
+        function initMap() {
+            map = L.map('map').setView([simLat, simLng], 10);
+            
+            // DÙNG BẢN ĐỒ NỀN TỐI CHUYÊN NGHIỆP CỦA ESRI (100% MIỄN PHÍ, KHÔNG CẦN KEY, KHÔNG LỖI CSS)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+                maxZoom: 16
+            }).addTo(map);
+        }
+
+        function getLocation(btn) {
+            btn.classList.add("active");
+            btn.innerHTML = '<i class="fa-solid fa-check"></i><span style="font-size:12px;">Đã định vị</span>';
+        }
+
+        function submitSOS() {
+            const phone = document.getElementById("phone-number").value;
+            const desc = document.getElementById("sos-text").value;
+            if (!phone || !desc) { alert("Yêu cầu nhập đầy đủ thông tin bắt buộc."); return; }
+
+            if (isOnline) {
+                let badge = document.getElementById("noti-count");
+                badge.style.display = "block"; 
+                badge.innerText = parseInt(badge.innerText) + 1;
+
+                const types = ['red', 'yellow', 'green'];
+                const status = types[Math.floor(Math.random() * types.length)];
+                
+                let colorCode = '';
+                if (status === 'red') {
+                    counts.red++; document.getElementById("stat-red").innerText = counts.red;
+                    colorCode = '#e53935';
+                } else if (status === 'yellow') {
+                    counts.yellow++; document.getElementById("stat-yellow").innerText = counts.yellow;
+                    colorCode = '#FDD835';
+                } else {
+                    counts.green++; document.getElementById("stat-green").innerText = counts.green;
+                    colorCode = '#4CAF50';
+                }
+
+                const feed = document.getElementById("sos-feed");
+                const emptyMsg = document.getElementById("empty-feed");
+                if(emptyMsg) emptyMsg.remove();
+                
+                feed.insertAdjacentHTML('afterbegin', 
+                    `<div class="feed-item" style="border-left-color: ${colorCode}; box-shadow: 0 0 10px rgba(0,0,0,0.2);">
+                        <strong style="color:${colorCode};">${phone}</strong><br><i>${desc}</i>
+                    </div>`
+                );
+
+                if(map) {
+                    let randLat = simLat + (Math.random() - 0.5) * 0.2;
+                    let randLng = simLng + (Math.random() - 0.5) * 0.2;
+                    let iconHtml = `<div style="background-color: ${colorCode}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colorCode};"></div>`;
+                    let icon = L.divIcon({ className: 'custom-pin', html: iconHtml, iconSize: [20,20] });
+                    L.marker([randLat, randLng], {icon: icon}).addTo(map).bindPopup(`<b>${phone}</b><br>${desc}`);
+                }
+
+                alert("Tín hiệu đã được hệ thống AI phân tích và hiển thị lên Bản đồ!");
+            } else {
+                alert("Hệ thống ngoại tuyến (Offline-First) đã mã hóa và lưu trữ gói tin cục bộ.");
+            }
+            
+            document.getElementById("phone-number").value = ""; 
+            document.getElementById("sos-text").value = "";
+        }
+    </script>
+</body>
+</html>
