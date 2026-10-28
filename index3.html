@@ -302,6 +302,29 @@
         .toast { position: fixed; left: 50%; bottom: 26px; z-index: 4000; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; background: #1f2a3b; box-shadow: 0 12px 30px rgba(15,23,36,.3); color: white; font-size: 12px; line-height: 1.5; transform: translateX(-50%); animation: authIn 200ms ease; }
         .toast.error { background: #c93a35; }
         @media (max-width: 700px) { .sos-card { border-radius: 22px 22px 0 0; } .sc-actions { grid-template-columns: 1fr; } .sc-actions .primary { order: -1; } }
+
+        /* ===== THÔNG BÁO ===== */
+        .noti-wrap { position: relative; }
+        button.notification-bell { padding: 0; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        button.notification-bell:hover, button.notification-bell[aria-expanded="true"] { border-color: #f0c9c6; background: #fff6f5; color: var(--red); }
+        .notification-bell .badge { display: none; }
+        .noti-panel { position: absolute; top: calc(100% + 10px); right: 0; z-index: 1600; width: 370px; max-width: calc(100vw - 24px); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 22px 60px rgba(15,23,36,.2); animation: authIn 180ms ease; }
+        .noti-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 17px 12px; border-bottom: 1px solid var(--line); }
+        .noti-head h4 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 720; }
+        .noti-head span { color: #8a95a4; font-size: 10px; }
+        .noti-list { max-height: min(60vh, 420px); overflow-y: auto; }
+        .noti-item { display: flex; width: 100%; gap: 11px; padding: 13px 17px; border: 0; border-bottom: 1px solid #f1f3f6; background: white; text-align: left; cursor: pointer; }
+        .noti-item:hover { background: #f8fafc; }
+        .noti-item.unread { background: #fff9f8; }
+        .noti-dot { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: white; font-size: 13px; }
+        .noti-body { min-width: 0; flex: 1; }
+        .noti-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink); font-size: 12px; font-weight: 700; }
+        .noti-title time { flex: none; color: #9aa4b1; font-size: 10px; font-weight: 500; }
+        .noti-text { margin-top: 3px; overflow: hidden; color: #697587; font-size: 11px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+        .noti-new { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--red); }
+        .noti-empty { display: grid; gap: 8px; padding: 38px 20px; color: #9aa4b1; font-size: 12px; text-align: center; }
+        .noti-empty i { color: #c4ccd6; font-size: 26px; }
+        @media (max-width: 700px) { .noti-panel { position: fixed; right: 12px; left: 12px; width: auto; max-width: none; } }
     </style>
 </head>
 <body>
@@ -317,8 +340,14 @@
             </label>
         </div>
         <div class="nav-right">
-            <div class="notification-bell" aria-label="Thông báo">
-                <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+            <div class="noti-wrap">
+                <button type="button" class="notification-bell" id="noti-btn" aria-label="Thông báo" aria-haspopup="true" aria-expanded="false" aria-controls="noti-panel" onclick="toggleNoti(event)">
+                    <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+                </button>
+                <div class="noti-panel" id="noti-panel" hidden>
+                    <div class="noti-head"><h4>Thông báo</h4><span id="noti-sub"></span></div>
+                    <div class="noti-list" id="noti-list"></div>
+                </div>
             </div>
             <div class="nav-actions" id="nav-actions">
                 <button class="btn btn-signin" onclick="openAuth('login')">Đăng nhập</button>
@@ -653,6 +682,7 @@
         const loadJSON = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } };
         const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
         let sosList = loadJSON(SOS_KEY), pendingList = loadJSON(PENDING_KEY);
+        const markerById = {};
 
         function addMarker(rec) {
             if (!map) return; // bản đồ chưa mở: initMap() sẽ vẽ lại toàn bộ từ sosList
@@ -662,7 +692,7 @@
             const popup = document.createElement('div'), strong = document.createElement('strong');
             strong.textContent = rec.phone;
             popup.append(strong, document.createElement('br'), document.createTextNode(rec.desc));
-            L.marker([rec.lat, rec.lng], { icon }).addTo(map).bindPopup(popup);
+            markerById[rec.id] = L.marker([rec.lat, rec.lng], { icon }).addTo(map).bindPopup(popup);
         }
 
         function addFeedItem(rec) {
@@ -679,9 +709,8 @@
         function showSOS(rec) {
             counts[rec.status]++;
             document.getElementById('stat-' + rec.status).innerText = counts[rec.status];
-            const badge = document.getElementById('noti-count');
-            badge.style.display = 'block';
-            badge.innerText = sosList.length;
+            updateBadge();
+            if (!document.getElementById('noti-panel').hidden) renderNoti();
             addFeedItem(rec);
             addMarker(rec);
         }
@@ -810,7 +839,7 @@
             if (!pendingList.length) return;
             const n = pendingList.length;
             pendingList.forEach(rec => { sosList.push(rec); showSOS(rec); });
-            pendingList = []; saveJSON(PENDING_KEY, pendingList); saveJSON(SOS_KEY, sosList);
+            pendingList = []; saveJSON(PENDING_KEY, pendingList); saveJSON(SOS_KEY, sosList); updateBadge();
             toast('Đã có mạng: tự động đồng bộ ' + n + ' gói tin SOS lên hệ thống.');
         }
 
@@ -988,7 +1017,82 @@
         // Khôi phục dữ liệu đã lưu khi mở lại trang
         sosList.forEach(rec => { counts[rec.status]++; addFeedItem(rec); });
         ['red', 'yellow', 'green'].forEach(k => document.getElementById('stat-' + k).innerText = counts[k]);
-        if (sosList.length) { const b = document.getElementById('noti-count'); b.style.display = 'block'; b.innerText = sosList.length; }
+
+        // ===== THÔNG BÁO (CHUÔNG) =====
+        const READ_KEY = 'relieflink_read';
+        let readCount = Math.min(parseInt(localStorage.getItem(READ_KEY)) || 0, sosList.length);
+        const fmtTime = ts => { const d = new Date(ts), z = n => String(n).padStart(2, '0'); return z(d.getHours()) + ':' + z(d.getMinutes()) + ' ' + z(d.getDate()) + '/' + z(d.getMonth() + 1); };
+
+        function updateBadge() {
+            const n = Math.max(0, sosList.length - readCount), b = document.getElementById('noti-count');
+            b.style.display = n ? 'block' : 'none';
+            b.textContent = n > 99 ? '99+' : n;
+        }
+        function renderNoti() {
+            const list = document.getElementById('noti-list');
+            list.replaceChildren();
+            const unread = Math.max(0, sosList.length - readCount);
+            document.getElementById('noti-sub').textContent = unread ? unread + ' chưa đọc' : 'Đã đọc hết';
+            if (pendingList.length) {
+                const it = document.createElement('div'); it.className = 'noti-item unread'; it.style.cursor = 'default';
+                it.innerHTML = '<div class="noti-dot" style="background:#5b7399"><i class="fa-solid fa-cloud-arrow-up"></i></div><div class="noti-body"><div class="noti-title"></div><div class="noti-text" style="white-space:normal"></div></div>';
+                it.querySelector('.noti-title').textContent = 'Đang chờ đồng bộ (' + pendingList.length + ')';
+                it.querySelector('.noti-text').textContent = 'Gói tin đã lưu ngoại tuyến, sẽ tự gửi khi có mạng.';
+                list.append(it);
+            }
+            if (!sosList.length && !pendingList.length) {
+                const e = document.createElement('div'); e.className = 'noti-empty';
+                e.innerHTML = '<i class="fa-regular fa-bell-slash"></i><span>Chưa có thông báo nào</span>';
+                list.append(e); return;
+            }
+            sosList.slice().reverse().slice(0, 30).forEach((rec, i) => {
+                const isNew = (sosList.length - 1 - i) >= readCount;
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'noti-item' + (isNew ? ' unread' : '');
+                btn.onclick = () => openNotiItem(rec.id);
+                const dot = document.createElement('div'); dot.className = 'noti-dot'; dot.style.background = COLORS[rec.status];
+                dot.innerHTML = '<i class="fa-solid ' + LEVELS[rec.status].icon + '"></i>';
+                const body = document.createElement('div'); body.className = 'noti-body';
+                const title = document.createElement('div'); title.className = 'noti-title';
+                const tl = document.createElement('span');
+                if (isNew) { const d = document.createElement('span'); d.className = 'noti-new'; tl.append(d); }
+                tl.append(document.createTextNode('Tín hiệu SOS · ' + LEVELS[rec.status].short));
+                const tm = document.createElement('time'); tm.textContent = fmtTime(rec.id);
+                title.append(tl, tm);
+                const tx = document.createElement('div'); tx.className = 'noti-text'; tx.textContent = rec.phone + ' - ' + rec.desc;
+                body.append(title, tx); btn.append(dot, body); list.append(btn);
+            });
+        }
+        function toggleNoti(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) {
+                renderNoti();
+                panel.hidden = false;
+                document.getElementById('noti-btn').setAttribute('aria-expanded', 'true');
+                if (window.innerWidth <= 700) panel.style.top = (document.getElementById('noti-btn').getBoundingClientRect().bottom + 8) + 'px';
+            } else closeNoti();
+        }
+        function closeNoti() {
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) return;
+            panel.hidden = true;
+            document.getElementById('noti-btn').setAttribute('aria-expanded', 'false');
+            readCount = sosList.length;
+            try { localStorage.setItem(READ_KEY, readCount); } catch (e) {}
+            updateBadge();
+        }
+        function openNotiItem(id) {
+            closeNoti();
+            switchTab('map-view', document.getElementById('map-tab'));
+            setTimeout(() => {
+                const m = markerById[id], rec = sosList.find(r => r.id === id);
+                if (m && rec && map) { map.setView([rec.lat, rec.lng], 13); m.openPopup(); }
+            }, 400);
+        }
+        document.addEventListener('click', e => { if (!e.target.closest('.noti-wrap')) closeNoti(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNoti(); });
+        updateBadge();
     </script>
 </body>
 </html>
