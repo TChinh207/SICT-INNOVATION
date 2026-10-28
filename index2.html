@@ -85,11 +85,11 @@
         .form-header p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
         .input-group { margin-bottom: 17px; }
         .input-group label { display: block; margin-bottom: 8px; color: #475467; font-size: 11px; font-weight: 700; }
-        input[type="tel"], textarea { width: 100%; border: 1px solid #e4e8ee; border-radius: 10px; outline: none; background: #fbfcfd; color: var(--ink); font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
-        input[type="tel"] { height: 43px; padding: 0 13px; }
+        input[type="tel"], input[type="text"]#full-name, textarea { width: 100%; border: 1px solid #e4e8ee; border-radius: 10px; outline: none; background: #fbfcfd; color: var(--ink); font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        input[type="tel"], input[type="text"]#full-name { height: 43px; padding: 0 13px; }
         textarea { min-height: 83px; padding: 12px 13px; resize: vertical; line-height: 1.55; }
-        input[type="tel"]::placeholder, textarea::placeholder { color: #a4adba; }
-        input[type="tel"]:focus, textarea:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
+        input[type="tel"]::placeholder, input#full-name::placeholder, textarea::placeholder { color: #a4adba; }
+        input[type="tel"]:focus, input#full-name:focus, textarea:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
         .multimodal-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
         .tool-btn { display: flex; min-height: 62px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px solid #e7ebf0; border-radius: 11px; background: #fbfcfd; color: #738093; font-size: 10px; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
         .tool-btn i { font-size: 14px; }
@@ -374,11 +374,17 @@
                     <h2>Gửi yêu cầu cứu trợ</h2>
                     <p>Hệ thống AI sẽ tự động phân tích và điều phối nguồn lực</p>
                 </div>
-                <ol class="steps" id="steps" aria-label="3 thông tin bắt buộc">
+                <ol class="steps" id="steps" aria-label="4 thông tin bắt buộc">
+                    <li id="step-name"><i class="fa-regular fa-circle"></i> Họ tên</li>
                     <li id="step-phone"><i class="fa-regular fa-circle"></i> SĐT</li>
                     <li id="step-desc"><i class="fa-regular fa-circle"></i> Mô tả</li>
                     <li id="step-geo"><i class="fa-regular fa-circle"></i> Định vị</li>
                 </ol>
+                <div class="input-group" id="grp-name">
+                    <label for="full-name">Họ và tên <span class="req">*</span></label>
+                    <input type="text" id="full-name" maxlength="80" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="name">
+                    <div class="inline-err">Vui lòng nhập họ và tên (ít nhất 2 ký tự).</div>
+                </div>
                 <div class="input-group" id="grp-phone">
                     <label for="phone-number">Số điện thoại liên hệ <span class="req">*</span></label>
                     <input type="tel" id="phone-number" inputmode="tel" maxlength="16" placeholder="Ví dụ: 09xx xxx xxx" autocomplete="tel">
@@ -407,7 +413,7 @@
                     </div>
                     <input type="file" id="photo-input" accept="image/*" multiple hidden>
                     <div class="thumbs" id="thumbs"></div>
-                    <p class="lock-hint" id="lock-hint"><i class="fa-solid fa-lock" aria-hidden="true"></i> Nhập đủ số điện thoại, mô tả và bấm <b>Gửi định vị</b> để mở phần này.</p>
+                    <p class="lock-hint" id="lock-hint"><i class="fa-solid fa-lock" aria-hidden="true"></i> Nhập đủ họ tên, số điện thoại, mô tả và bấm <b>Gửi định vị</b> để mở phần này.</p>
                 </div>
                 <button class="btn-submit-sos" id="btn-submit" onclick="submitSOS()" disabled>GỬI TÍN HIỆU KHẨN CẤP</button>
                 <p class="form-footnote"><i class="fa-solid fa-lock" aria-hidden="true"></i> Chỉ chia sẻ thông tin cần thiết cho công tác cứu trợ</p>
@@ -646,7 +652,7 @@
             const icon = L.divIcon({ className: 'custom-pin', iconSize: [20, 20],
                 html: `<div style="background-color:${c};width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px ${c};"></div>` });
             const popup = document.createElement('div'), strong = document.createElement('strong');
-            strong.textContent = rec.phone;
+            strong.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone;
             popup.append(strong, document.createElement('br'), document.createTextNode(rec.desc));
             if (rec.accuracy != null) {
                 const ac = document.createElement('div');
@@ -670,7 +676,7 @@
             const c = COLORS[rec.status];
             const item = document.createElement('div'), ph = document.createElement('strong'), ds = document.createElement('i');
             item.className = 'feed-item'; item.style.borderLeftColor = c;
-            ph.style.color = c; ph.textContent = rec.phone; ds.textContent = rec.desc;
+            ph.style.color = c; ph.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone; ds.textContent = rec.desc;
             item.append(ph, document.createElement('br'), ds);
             if (rec.accuracy != null || (rec.images && rec.images.length)) {
                 const meta = document.createElement('div');
@@ -964,7 +970,7 @@
                 tl.append(document.createTextNode('Tín hiệu SOS · ' + LEVELS[rec.status].short));
                 const tm = document.createElement('time'); tm.textContent = fmtTime(rec.id);
                 title.append(tl, tm);
-                const tx = document.createElement('div'); tx.className = 'noti-text'; tx.textContent = rec.phone + ' - ' + rec.desc;
+                const tx = document.createElement('div'); tx.className = 'noti-text'; tx.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone + ' - ' + rec.desc;
                 body.append(title, tx); btn.append(dot, body); list.append(btn);
             });
         }
@@ -1007,24 +1013,27 @@
         const MAX_PHOTOS = 3;
         const el = id => document.getElementById(id);
         const cleanPhone = v => v.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0');
+        const nameOk = () => el('full-name').value.trim().length >= 2;
         const phoneOk = () => /^0\d{9}$/.test(cleanPhone(el('phone-number').value.trim()));
         const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
         let geo = null, geoWatch = null, geoTimer = null, photos = [];
 
         function refreshSteps() {
-            const ok = { phone: phoneOk(), desc: el('sos-text').value.trim().length > 0, geo: !!geo };
-            [['phone', ok.phone], ['desc', ok.desc], ['geo', ok.geo]].forEach(([k, v]) => {
+            const ok = { name: nameOk(), phone: phoneOk(), desc: el('sos-text').value.trim().length > 0, geo: !!geo };
+            [['name', ok.name], ['phone', ok.phone], ['desc', ok.desc], ['geo', ok.geo]].forEach(([k, v]) => {
                 const li = el('step-' + k);
                 li.classList.toggle('done', v);
                 li.querySelector('i').className = v ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
             });
-            const ready = ok.phone && ok.desc && ok.geo;
+            const ready = ok.name && ok.phone && ok.desc && ok.geo;
             el('btn-photo').disabled = !ready;
             el('btn-voice').disabled = !ready;
             el('btn-submit').disabled = !ready;
             el('lock-hint').hidden = ready;
             if (!ready && listening) stopVoice();
         }
+        el('full-name').addEventListener('input', () => { if (nameOk()) el('grp-name').classList.remove('invalid'); refreshSteps(); });
+        el('full-name').addEventListener('blur', () => { const v = el('full-name').value.trim(); el('grp-name').classList.toggle('invalid', !!v && !nameOk()); });
         el('phone-number').addEventListener('input', () => { if (phoneOk()) el('grp-phone').classList.remove('invalid'); refreshSteps(); });
         el('phone-number').addEventListener('blur', () => { const v = el('phone-number').value.trim(); el('grp-phone').classList.toggle('invalid', !!v && !phoneOk()); });
         el('sos-text').addEventListener('input', refreshSteps);
@@ -1190,6 +1199,7 @@
         /* ---------- GỬI SOS: dùng đúng tọa độ GPS đã lấy ---------- */
         function submitSOS() {
             const desc = el('sos-text').value.trim();
+            if (!nameOk()) { el('grp-name').classList.add('invalid'); el('full-name').focus(); toast('Vui lòng nhập họ và tên.', true); return; }
             if (!phoneOk()) { el('grp-phone').classList.add('invalid'); el('phone-number').focus(); toast('Vui lòng nhập số điện thoại hợp lệ.', true); return; }
             if (!desc) { el('sos-text').focus(); toast('Vui lòng mô tả tình trạng.', true); return; }
             if (!geo) { toast('Vui lòng bấm "Gửi định vị" để gửi vị trí của bạn.', true); return; }
@@ -1200,7 +1210,7 @@
             stopVoice();
             const a = assessSOS(desc);
             const rec = {
-                id: Date.now(), phone: cleanPhone(el('phone-number').value.trim()), desc, status: a.status,
+                id: Date.now(), name: el('full-name').value.trim().replace(/\s+/g, ' '), phone: cleanPhone(el('phone-number').value.trim()), desc, status: a.status,
                 lat: geo.lat, lng: geo.lng, accuracy: Math.round(geo.accuracy), images: photos.slice()
             };
             if (isOnline) {
@@ -1211,7 +1221,7 @@
                 pendingList.push(rec); saveJSON(PENDING_KEY, pendingList);
                 toast('Đang offline: đã lưu gói tin (' + LEVELS[rec.status].short + '), sẽ tự đồng bộ khi có mạng.');
             }
-            el('phone-number').value = ''; el('sos-text').value = '';
+            el('full-name').value = ''; el('phone-number').value = ''; el('sos-text').value = '';
             geo = null; photos = []; renderThumbs(); setGeoBtn('idle'); el('geo-info').hidden = true; el('geo-alert').hidden = true;
             refreshSteps();
         }
