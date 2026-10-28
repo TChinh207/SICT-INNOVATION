@@ -90,10 +90,6 @@
         textarea { min-height: 83px; padding: 12px 13px; resize: vertical; line-height: 1.55; }
         input[type="tel"]::placeholder, textarea::placeholder { color: #a4adba; }
         input[type="tel"]:focus, textarea:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
-        .needs-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-        .need-tag { min-height: 31px; padding: 0 11px; border: 1px solid #e5e9ef; border-radius: 99px; background: white; color: #687486; font-size: 10px; cursor: pointer; transition: border-color 150ms ease, background 150ms ease, color 150ms ease; }
-        .need-tag:hover { border-color: #f0a6a1; color: var(--red); }
-        .need-tag.selected { border-color: #f5d2cf; background: #fff2f0; color: #d73f3a; }
         .multimodal-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
         .tool-btn { display: flex; min-height: 62px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px solid #e7ebf0; border-radius: 11px; background: #fbfcfd; color: #738093; font-size: 10px; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
         .tool-btn i { font-size: 14px; }
@@ -126,6 +122,8 @@
         .feed-item i { color: #7d8795; font-size: 10px; }
         #empty-feed { display: grid; min-height: 170px; place-content: center; gap: 9px; color: #9aa4b1; font-size: 11px; text-align: center; }
         #empty-feed::before { color: #c0c9d4; font-family: "Font Awesome 6 Free"; font-size: 25px; content: "\f06a"; }
+        #map-view { height: calc(100vh - 137px); }
+        #map { min-height: 0; height: 100%; }
         .custom-pin { border-radius: 50%; border: 2px solid white; }
 
         button:focus-visible { outline: 3px solid #92b8ee; outline-offset: 3px; }
@@ -151,8 +149,8 @@
             .intro-copy { margin: 13px 0 17px; font-size: 12px; }
             .response-note { max-width: none; padding: 12px; }
             .form-container { padding: 22px 18px; border-radius: 16px; }
-            #map-view { min-height: auto; flex-direction: column; padding: 12px; }
-            #map { min-height: 48vh; flex: none; }
+            #map-view { height: auto; min-height: auto; flex-direction: column; padding: 12px; }
+            #map { height: 48vh; min-height: 48vh; flex: none; }
             .dashboard-sidebar { width: 100%; min-height: 330px; flex: none; }
             .sos-feed { max-height: 270px; }
         }
@@ -258,6 +256,70 @@
             .auth-modal { max-height: 94vh; border-radius: 22px 22px 0 0; }
             .auth-main { max-height: 94vh; }
         }
+
+        /* ===== THÔNG BÁO NHANH ===== */
+        .toast { position: fixed; left: 50%; bottom: 26px; z-index: 4000; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; background: #1f2a3b; box-shadow: 0 12px 30px rgba(15,23,36,.3); color: white; font-size: 12px; line-height: 1.5; transform: translateX(-50%); animation: authIn 200ms ease; }
+        .toast.error { background: #c93a35; }
+
+        /* ===== THÔNG BÁO ===== */
+        .noti-wrap { position: relative; }
+        button.notification-bell { padding: 0; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        button.notification-bell:hover, button.notification-bell[aria-expanded="true"] { border-color: #f0c9c6; background: #fff6f5; color: var(--red); }
+        .notification-bell .badge { display: none; }
+        .noti-panel { position: absolute; top: calc(100% + 10px); right: 0; z-index: 1600; width: 370px; max-width: calc(100vw - 24px); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 22px 60px rgba(15,23,36,.2); animation: authIn 180ms ease; }
+        .noti-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 17px 12px; border-bottom: 1px solid var(--line); }
+        .noti-head h4 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 720; }
+        .noti-head span { color: #8a95a4; font-size: 10px; }
+        .noti-list { max-height: min(60vh, 420px); overflow-y: auto; }
+        .noti-item { display: flex; width: 100%; gap: 11px; padding: 13px 17px; border: 0; border-bottom: 1px solid #f1f3f6; background: white; text-align: left; cursor: pointer; }
+        .noti-item:hover { background: #f8fafc; }
+        .noti-item.unread { background: #fff9f8; }
+        .noti-dot { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: white; font-size: 13px; }
+        .noti-body { min-width: 0; flex: 1; }
+        .noti-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink); font-size: 12px; font-weight: 700; }
+        .noti-title time { flex: none; color: #9aa4b1; font-size: 10px; font-weight: 500; }
+        .noti-text { margin-top: 3px; overflow: hidden; color: #697587; font-size: 11px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+        .noti-new { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--red); }
+        .noti-empty { display: grid; gap: 8px; padding: 38px 20px; color: #9aa4b1; font-size: 12px; text-align: center; }
+        .noti-empty i { color: #c4ccd6; font-size: 26px; }
+        @media (max-width: 700px) { .noti-panel { position: fixed; right: 12px; left: 12px; width: auto; max-width: none; } }
+
+        /* ===== FORM SOS: 3 BƯỚC BẮT BUỘC + PHẦN TÙY CHỌN ===== */
+        .req { color: var(--red); }
+        .opt-tag { color: #a0a9b6; font-weight: 500; }
+        .label-note { display: block; margin: -4px 0 8px; color: #a0a9b6; font-size: 10px; font-weight: 500; }
+        .steps { display: flex; gap: 6px; margin: 0 0 20px; padding: 0; list-style: none; }
+        .steps li { display: flex; flex: 1; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px; border: 1px solid #e7ebf0; border-radius: 9px; background: #fbfcfd; color: #98a2b0; font-size: 10px; font-weight: 700; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
+        .steps li.done { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .input-group.invalid input, .input-group.invalid textarea { border-color: #ee8a85; background: #fffafa; }
+        .inline-err { display: none; margin-top: 6px; color: #d73f3a; font-size: 10px; }
+        .input-group.invalid .inline-err { display: block; }
+        .voice-live { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--red); font-size: 10px; }
+        .voice-live::before { width: 7px; height: 7px; border-radius: 50%; background: var(--red); content: ""; animation: rec 1s ease-in-out infinite; }
+        @keyframes rec { 50% { opacity: .25; } }
+
+        .btn-geo { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 9px; border: 1.5px solid #f1b4af; border-radius: 11px; background: #fff6f5; color: #d9443f; font-size: 12px; font-weight: 750; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        .btn-geo:hover:not(:disabled) { background: #ffeeed; }
+        .btn-geo:disabled { cursor: progress; }
+        .btn-geo.done { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .geo-info { margin-top: 8px; color: #647184; font-size: 10px; line-height: 1.6; }
+        .geo-info b { color: var(--ink); }
+        .geo-alert { display: flex; gap: 10px; padding: 12px 13px; margin-top: 10px; border: 1px solid #f8ddda; border-radius: 11px; background: #fff6f5; color: #b93631; font-size: 11px; line-height: 1.6; }
+        .geo-alert > i { margin-top: 2px; }
+        .geo-alert strong { display: block; margin-bottom: 2px; }
+        .geo-alert .link-btn { margin-top: 6px; }
+
+        .multimodal-tools.two { grid-template-columns: repeat(2, 1fr); }
+        .tool-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .tool-btn:disabled:hover { border-color: #e7ebf0; background: #fbfcfd; color: #738093; }
+        .tool-btn.listening { border-color: #f1b4af; background: #fff4f2; color: var(--red); }
+        .tool-btn.listening i { animation: rec 1s ease-in-out infinite; }
+        .lock-hint { margin: 9px 0 0; color: #98a2b0; font-size: 10px; line-height: 1.5; }
+        .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .thumb { position: relative; width: 60px; height: 60px; overflow: hidden; border: 1px solid #e4e8ee; border-radius: 9px; }
+        .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .thumb button { position: absolute; top: 3px; right: 3px; display: grid; width: 18px; height: 18px; place-items: center; border: 0; border-radius: 50%; background: rgba(20,28,40,.65); color: white; font-size: 9px; cursor: pointer; }
+        .btn-submit-sos:disabled { opacity: .45; box-shadow: none; transform: none; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -273,8 +335,14 @@
             </label>
         </div>
         <div class="nav-right">
-            <div class="notification-bell" aria-label="Thông báo">
-                <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+            <div class="noti-wrap">
+                <button type="button" class="notification-bell" id="noti-btn" aria-label="Thông báo" aria-haspopup="true" aria-expanded="false" aria-controls="noti-panel" onclick="toggleNoti(event)">
+                    <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+                </button>
+                <div class="noti-panel" id="noti-panel" hidden>
+                    <div class="noti-head"><h4>Thông báo</h4><span id="noti-sub"></span></div>
+                    <div class="noti-list" id="noti-list"></div>
+                </div>
             </div>
             <div class="nav-actions" id="nav-actions">
                 <button class="btn btn-signin" onclick="openAuth('login')">Đăng nhập</button>
@@ -306,34 +374,42 @@
                     <h2>Gửi yêu cầu cứu trợ</h2>
                     <p>Hệ thống AI sẽ tự động phân tích và điều phối nguồn lực</p>
                 </div>
-                <div class="input-group">
-                    <label for="phone-number">Số điện thoại liên hệ</label>
-                    <input type="tel" id="phone-number" placeholder="Ví dụ: 09xx xxx xxx" autocomplete="tel">
+                <ol class="steps" id="steps" aria-label="3 thông tin bắt buộc">
+                    <li id="step-phone"><i class="fa-regular fa-circle"></i> SĐT</li>
+                    <li id="step-desc"><i class="fa-regular fa-circle"></i> Mô tả</li>
+                    <li id="step-geo"><i class="fa-regular fa-circle"></i> Định vị</li>
+                </ol>
+                <div class="input-group" id="grp-phone">
+                    <label for="phone-number">Số điện thoại liên hệ <span class="req">*</span></label>
+                    <input type="tel" id="phone-number" inputmode="tel" maxlength="16" placeholder="Ví dụ: 09xx xxx xxx" autocomplete="tel">
+                    <div class="inline-err">Số điện thoại gồm 10 chữ số, bắt đầu bằng 0 (hoặc +84).</div>
                 </div>
-                <div class="input-group">
-                    <label for="sos-text">Mô tả tình trạng</label>
+                <div class="input-group" id="grp-desc">
+                    <label for="sos-text">Mô tả tình trạng <span class="req">*</span></label>
                     <textarea id="sos-text" placeholder="Mô tả ngắn gọn tình hình và vị trí hiện tại..."></textarea>
+                    <div class="voice-live" id="voice-live" hidden>Đang nghe - hãy nói tiếng Việt, lời nói sẽ được ghi vào ô này</div>
                 </div>
                 <div class="input-group">
-                    <label>Nhu cầu ưu tiên</label>
-                    <div class="needs-grid">
-                        <button type="button" class="need-tag" onclick="this.classList.toggle('selected'); this.setAttribute('aria-pressed', this.classList.contains('selected'))" aria-pressed="false">Y tế / Cấp cứu</button>
-                        <button type="button" class="need-tag" onclick="this.classList.toggle('selected'); this.setAttribute('aria-pressed', this.classList.contains('selected'))" aria-pressed="false">Lương thực</button>
-                        <button type="button" class="need-tag" onclick="this.classList.toggle('selected'); this.setAttribute('aria-pressed', this.classList.contains('selected'))" aria-pressed="false">Nước sạch</button>
-                        <button type="button" class="need-tag" onclick="this.classList.toggle('selected'); this.setAttribute('aria-pressed', this.classList.contains('selected'))" aria-pressed="false">Phương tiện di tản</button>
+                    <label>Vị trí hiện tại <span class="req">*</span></label>
+                    <span class="label-note">Lấy trực tiếp từ GPS của thiết bị, không dùng tọa độ giả lập</span>
+                    <button type="button" class="btn-geo" id="btn-gps" onclick="getLocation()"><i class="fa-solid fa-location-crosshairs"></i><span>Gửi định vị</span></button>
+                    <div class="geo-info" id="geo-info" hidden></div>
+                    <div class="geo-alert" id="geo-alert" role="alert" hidden>
+                        <i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i>
+                        <div><strong id="geo-alert-title"></strong><span id="geo-alert-text"></span><br><button type="button" class="link-btn" onclick="getLocation()">Thử lại</button></div>
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Dữ liệu đính kèm</label>
-                    <div class="multimodal-tools">
-                        <button type="button" class="tool-btn" id="btn-gps" onclick="getLocation(this)">
-                            <i class="fa-solid fa-location-crosshairs"></i><span>Tọa độ</span>
-                        </button>
-                        <button type="button" class="tool-btn"><i class="fa-solid fa-camera"></i><span>Hình ảnh</span></button>
-                        <button type="button" class="tool-btn"><i class="fa-solid fa-microphone"></i><span>Giọng nói</span></button>
+                    <label>Bổ sung thông tin <span class="opt-tag">(không bắt buộc)</span></label>
+                    <div class="multimodal-tools two">
+                        <button type="button" class="tool-btn" id="btn-photo" onclick="pickPhoto()" disabled><i class="fa-solid fa-camera"></i><span id="photo-label">Hình ảnh</span></button>
+                        <button type="button" class="tool-btn" id="btn-voice" onclick="toggleVoice()" disabled><i class="fa-solid fa-microphone"></i><span id="voice-label">Giọng nói</span></button>
                     </div>
+                    <input type="file" id="photo-input" accept="image/*" multiple hidden>
+                    <div class="thumbs" id="thumbs"></div>
+                    <p class="lock-hint" id="lock-hint"><i class="fa-solid fa-lock" aria-hidden="true"></i> Nhập đủ số điện thoại, mô tả và bấm <b>Gửi định vị</b> để mở phần này.</p>
                 </div>
-                <button class="btn-submit-sos" onclick="submitSOS()">GỬI TÍN HIỆU KHẨN CẤP</button>
+                <button class="btn-submit-sos" id="btn-submit" onclick="submitSOS()" disabled>GỬI TÍN HIỆU KHẨN CẤP</button>
                 <p class="form-footnote"><i class="fa-solid fa-lock" aria-hidden="true"></i> Chỉ chia sẻ thông tin cần thiết cho công tác cứu trợ</p>
                 </div>
             </div>
@@ -504,12 +580,13 @@
         </div>
     </div>
 
+
     <!-- Thư viện Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let isOnline = true, map;
         let counts = { red: 0, yellow: 0, green: 0 };
-        let simLat = 21.0285, simLng = 105.8542; // Tọa độ giả lập (Hà Nội)
+        let simLat = 21.0285, simLng = 105.8542; // chỉ dùng làm tâm bản đồ mặc định (Hà Nội), KHÔNG dùng làm vị trí SOS
 
         function switchTab(viewId, btn) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -518,7 +595,7 @@
             document.getElementById(viewId).classList.add('active');
             btn.classList.add('active');
             btn.setAttribute('aria-selected', 'true');
-            
+
             // Xử lý nạp bản đồ khi click sang Tab Bản đồ
             if (viewId === 'map-view') {
                 if (!map) {
@@ -540,82 +617,134 @@
                 st.innerText = "Offline"; st.style.color = "#e53935"; icon.className = "fa-solid fa-wifi-slash"; icon.style.color = "#e53935";
             }
             const w = document.getElementById("auth-offline"); if (w) w.hidden = isOnline;
+            if (isOnline) syncPending();
         }
 
         function initMap() {
             map = L.map('map').setView([simLat, simLng], 10);
-            
+
             // DÙNG BẢN ĐỒ NỀN TỐI CHUYÊN NGHIỆP CỦA ESRI (100% MIỄN PHÍ, KHÔNG CẦN KEY, KHÔNG LỖI CSS)
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
                 attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
                 maxZoom: 16
             }).addTo(map);
+            sosList.forEach(addMarker);
+            if (sosList.length) map.fitBounds(sosList.map(r => [r.lat, r.lng]), { padding: [60, 60], maxZoom: 12 });
         }
 
-        function getLocation(btn) {
-            btn.classList.add("active");
-            btn.innerHTML = '<i class="fa-solid fa-check"></i><span style="font-size:12px;">Đã định vị</span>';
-        }
+        // ===== LƯU TRỮ & HIỂN THỊ SOS =====
+        const SOS_KEY = 'relieflink_sos', PENDING_KEY = 'relieflink_pending';
+        const COLORS = { red: '#e53935', yellow: '#FDD835', green: '#4CAF50' };
+        const loadJSON = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } };
+        const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+        let sosList = loadJSON(SOS_KEY), pendingList = loadJSON(PENDING_KEY);
+        const markerById = {};
 
-        function submitSOS() {
-            const phone = document.getElementById("phone-number").value;
-            const desc = document.getElementById("sos-text").value;
-            if (!phone || !desc) { alert("Yêu cầu nhập đầy đủ thông tin bắt buộc."); return; }
-
-            if (isOnline) {
-                let badge = document.getElementById("noti-count");
-                badge.style.display = "block"; 
-                badge.innerText = parseInt(badge.innerText) + 1;
-
-                const types = ['red', 'yellow', 'green'];
-                const status = types[Math.floor(Math.random() * types.length)];
-                
-                let colorCode = '';
-                if (status === 'red') {
-                    counts.red++; document.getElementById("stat-red").innerText = counts.red;
-                    colorCode = '#e53935';
-                } else if (status === 'yellow') {
-                    counts.yellow++; document.getElementById("stat-yellow").innerText = counts.yellow;
-                    colorCode = '#FDD835';
-                } else {
-                    counts.green++; document.getElementById("stat-green").innerText = counts.green;
-                    colorCode = '#4CAF50';
-                }
-
-                const feed = document.getElementById("sos-feed");
-                const emptyMsg = document.getElementById("empty-feed");
-                if(emptyMsg) emptyMsg.remove();
-                
-                const feedItem = document.createElement("div");
-                const phoneLabel = document.createElement("strong");
-                const description = document.createElement("i");
-                feedItem.className = "feed-item";
-                feedItem.style.borderLeftColor = colorCode;
-                phoneLabel.style.color = colorCode;
-                phoneLabel.textContent = phone;
-                description.textContent = desc;
-                feedItem.append(phoneLabel, document.createElement("br"), description);
-                feed.prepend(feedItem);
-
-                if(map) {
-                    let randLat = simLat + (Math.random() - 0.5) * 0.2;
-                    let randLng = simLng + (Math.random() - 0.5) * 0.2;
-                    let iconHtml = `<div style="background-color: ${colorCode}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${colorCode};"></div>`;
-                    let icon = L.divIcon({ className: 'custom-pin', html: iconHtml, iconSize: [20,20] });
-                    const popup = document.createElement("div");
-                    const popupPhone = document.createElement("strong");
-                    popupPhone.textContent = phone;
-                    popup.append(popupPhone, document.createElement("br"), document.createTextNode(desc));
-                    L.marker([randLat, randLng], {icon: icon}).addTo(map).bindPopup(popup);
-                }
-
-                alert("Tín hiệu đã được hệ thống AI phân tích và hiển thị lên Bản đồ!");
-            } else {
-                alert("Hệ thống ngoại tuyến (Offline-First) đã mã hóa và lưu trữ gói tin cục bộ.");
+        function addMarker(rec) {
+            if (!map) return; // bản đồ chưa mở: initMap() sẽ vẽ lại toàn bộ từ sosList
+            const c = COLORS[rec.status];
+            const icon = L.divIcon({ className: 'custom-pin', iconSize: [20, 20],
+                html: `<div style="background-color:${c};width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px ${c};"></div>` });
+            const popup = document.createElement('div'), strong = document.createElement('strong');
+            strong.textContent = rec.phone;
+            popup.append(strong, document.createElement('br'), document.createTextNode(rec.desc));
+            if (rec.accuracy != null) {
+                const ac = document.createElement('div');
+                ac.style.cssText = 'margin-top:5px;font-size:11px;color:#667085';
+                ac.textContent = 'Vị trí GPS · sai số ≈ ' + rec.accuracy + ' m';
+                popup.append(ac);
+                L.circle([rec.lat, rec.lng], { radius: rec.accuracy, color: c, weight: 1, fillColor: c, fillOpacity: 0.12, interactive: false }).addTo(map);
             }
-            
-            document.getElementById("phone-number").value = ""; 
-            document.getElementById("sos-text").value = "";
+            if (rec.images && rec.images.length) {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-wrap:wrap';
+                rec.images.forEach(src => { const im = document.createElement('img'); im.src = src; im.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:6px'; row.append(im); });
+                popup.append(row);
+            }
+            markerById[rec.id] = L.marker([rec.lat, rec.lng], { icon }).addTo(map).bindPopup(popup, { maxWidth: 260 });
+        }
+
+        function addFeedItem(rec) {
+            const empty = document.getElementById('empty-feed');
+            if (empty) empty.remove();
+            const c = COLORS[rec.status];
+            const item = document.createElement('div'), ph = document.createElement('strong'), ds = document.createElement('i');
+            item.className = 'feed-item'; item.style.borderLeftColor = c;
+            ph.style.color = c; ph.textContent = rec.phone; ds.textContent = rec.desc;
+            item.append(ph, document.createElement('br'), ds);
+            if (rec.accuracy != null || (rec.images && rec.images.length)) {
+                const meta = document.createElement('div');
+                meta.style.cssText = 'margin-top:4px;color:#98a2b0';
+                const parts = [];
+                if (rec.accuracy != null) parts.push('GPS ±' + rec.accuracy + ' m');
+                if (rec.images && rec.images.length) parts.push(rec.images.length + ' ảnh');
+                meta.textContent = '📍 ' + parts.join(' · ');
+                item.append(meta);
+            }
+            document.getElementById('sos-feed').prepend(item);
+        }
+
+        function showSOS(rec) {
+            counts[rec.status]++;
+            document.getElementById('stat-' + rec.status).innerText = counts[rec.status];
+            updateBadge();
+            if (!document.getElementById('noti-panel').hidden) renderNoti();
+            addFeedItem(rec);
+            addMarker(rec);
+        }
+
+        // ===== ĐÁNH GIÁ MỨC ĐỘ NGUY HIỂM (rule-based, mô phỏng AI) =====
+        const LEVELS = {
+            red:    { name: 'NHÃN ĐỎ - KHẨN CẤP TÍNH MẠNG', icon: 'fa-triangle-exclamation', short: 'Đỏ - Khẩn cấp', desc: 'Nguy hiểm đến tính mạng: ngập sâu, mắc kẹt, sạt lở, có người bị thương hoặc nhóm dễ tổn thương. Được ưu tiên điều lực lượng cứu hộ ngay.' },
+            yellow: { name: 'NHÃN VÀNG - CẦN NHU YẾU PHẨM', icon: 'fa-box-open', short: 'Vàng - Cần vật tư', desc: 'Tạm an toàn về vị trí nhưng thiếu lương thực, nước sạch, thuốc men hoặc bị chia cắt. Cần tiếp tế sớm.' },
+            green:  { name: 'NHÃN XANH - AN TOÀN / ĐÃ ỨNG CỨU', icon: 'fa-shield-heart', short: 'Xanh - An toàn', desc: 'Đã có lực lượng tiếp cận hoặc đã nhận đủ hỗ trợ. Hệ thống chỉ ghi nhận để theo dõi.' }
+        };
+        const RULES = {
+            red: [
+                ['ngap mai|trut noc|len tan tran|ngap sau|tren mai|mai nha|ngap nuoc', 'Nhắc đến ngập sâu / mắc kẹt trên mái nhà'],
+                ['mac ket|sat lo|sat nui|vui lap|lu ong|lu quet|mat noc|chim ghe|duoi nuoc', 'Có dấu hiệu mắc kẹt, sạt lở, lũ quét hoặc chìm phương tiện'],
+                ['bi thuong|thuong vong|chet|cap cuu|benh nang|chay mau|ngat|bat tinh', 'Có người bị thương hoặc cần cấp cứu'],
+                ['mang thai|chuyen da|so sinh|em be|tre nho|tre em|nguoi gia|ba chau|cu gia|con nho', 'Có nhóm dễ bị tổn thương (trẻ em, người già, thai phụ)'],
+                ['cuu voi|cuu toi|nguy hiem|urgent_|khan cap', 'Có từ ngữ kêu cứu khẩn cấp']
+            ],
+            yellow: [
+                ['het com|het meo|het luong|hungry_|can kiet|thieu luong|luong thuc', 'Thiếu hoặc hết lương thực'],
+                ['het nuoc|khong co nuoc|nuoc sach|nuoc ngot|khat', 'Thiếu nước sạch'],
+                ['mat dien|co lap|chia cat|het thuoc|thieu thuoc|thuoc men', 'Mất điện / bị chia cắt / thiếu thuốc men']
+            ],
+            green: [['da duoc cuu|da co doi|da nhan|da duoc ho tro|an toan|da on', 'Cho biết đã được ứng cứu hoặc đã an toàn']]
+        };
+        const noAccent = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        const hit = (text, pat) => new RegExp('\\b(' + pat + ')\\b').test(text);
+
+        function assessSOS(desc) {
+            const t = noAccent(desc.toLowerCase().replace(/đói/g, 'hungry_').replace(/gấp/g, 'urgent_'));
+            const found = { red: [], yellow: [], green: [] };
+            Object.keys(RULES).forEach(k => RULES[k].forEach(([pat, why]) => { if (hit(t, pat)) found[k].push(why); }));
+            let status, reasons;
+            if (found.red.length) { status = 'red'; reasons = found.red; }
+            else if (found.green.length && !found.yellow.length) { status = 'green'; reasons = found.green; }
+            else if (found.yellow.length) { status = 'yellow'; reasons = found.yellow; }
+            else { status = 'yellow'; reasons = ['Chưa đủ thông tin để xác định mức độ - tạm xếp mức ưu tiên cao để lực lượng liên hệ xác minh']; }
+            return { status, reasons };
+        }
+
+        function toast(msg, isError) {
+            document.querySelectorAll('.toast').forEach(n => n.remove());
+            const el = document.createElement('div');
+            el.className = 'toast' + (isError ? ' error' : '');
+            el.setAttribute('role', 'status'); el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4200);
+        }
+
+        // Đồng bộ các gói tin SOS lưu khi mất mạng
+        function syncPending() {
+            if (!pendingList.length) return;
+            const n = pendingList.length;
+            pendingList.forEach(rec => { sosList.push(rec); showSOS(rec); });
+            pendingList = []; saveJSON(PENDING_KEY, pendingList); saveJSON(SOS_KEY, sosList); updateBadge();
+            toast('Đã có mạng: tự động đồng bộ ' + n + ' gói tin SOS lên hệ thống.');
         }
 
         /* ===== AUTH: ĐĂNG NHẬP / ĐĂNG KÝ (demo phía client) ===== */
@@ -788,6 +917,305 @@
         }
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('auth-overlay').hidden) closeAuth(); });
         renderUser(store.get(SESSION_KEY, null));
+
+        // Khôi phục dữ liệu đã lưu khi mở lại trang
+        sosList.forEach(rec => { counts[rec.status]++; addFeedItem(rec); });
+        ['red', 'yellow', 'green'].forEach(k => document.getElementById('stat-' + k).innerText = counts[k]);
+
+        // ===== THÔNG BÁO (CHUÔNG) =====
+        const READ_KEY = 'relieflink_read';
+        let readCount = 0;
+        try { readCount = Math.min(parseInt(localStorage.getItem(READ_KEY)) || 0, sosList.length); } catch (e) { /* trình duyệt chặn lưu trữ */ }
+        const fmtTime = ts => { const d = new Date(ts), z = n => String(n).padStart(2, '0'); return z(d.getHours()) + ':' + z(d.getMinutes()) + ' ' + z(d.getDate()) + '/' + z(d.getMonth() + 1); };
+
+        function updateBadge() {
+            const n = Math.max(0, sosList.length - readCount), b = document.getElementById('noti-count');
+            b.style.display = n ? 'block' : 'none';
+            b.textContent = n > 99 ? '99+' : n;
+        }
+        function renderNoti() {
+            const list = document.getElementById('noti-list');
+            list.replaceChildren();
+            const unread = Math.max(0, sosList.length - readCount);
+            document.getElementById('noti-sub').textContent = unread ? unread + ' chưa đọc' : 'Đã đọc hết';
+            if (pendingList.length) {
+                const it = document.createElement('div'); it.className = 'noti-item unread'; it.style.cursor = 'default';
+                it.innerHTML = '<div class="noti-dot" style="background:#5b7399"><i class="fa-solid fa-cloud-arrow-up"></i></div><div class="noti-body"><div class="noti-title"></div><div class="noti-text" style="white-space:normal"></div></div>';
+                it.querySelector('.noti-title').textContent = 'Đang chờ đồng bộ (' + pendingList.length + ')';
+                it.querySelector('.noti-text').textContent = 'Gói tin đã lưu ngoại tuyến, sẽ tự gửi khi có mạng.';
+                list.append(it);
+            }
+            if (!sosList.length && !pendingList.length) {
+                const e = document.createElement('div'); e.className = 'noti-empty';
+                e.innerHTML = '<i class="fa-regular fa-bell-slash"></i><span>Chưa có thông báo nào</span>';
+                list.append(e); return;
+            }
+            sosList.slice().reverse().slice(0, 30).forEach((rec, i) => {
+                const isNew = (sosList.length - 1 - i) >= readCount;
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'noti-item' + (isNew ? ' unread' : '');
+                btn.onclick = () => openNotiItem(rec.id);
+                const dot = document.createElement('div'); dot.className = 'noti-dot'; dot.style.background = COLORS[rec.status];
+                dot.innerHTML = '<i class="fa-solid ' + LEVELS[rec.status].icon + '"></i>';
+                const body = document.createElement('div'); body.className = 'noti-body';
+                const title = document.createElement('div'); title.className = 'noti-title';
+                const tl = document.createElement('span');
+                if (isNew) { const d = document.createElement('span'); d.className = 'noti-new'; tl.append(d); }
+                tl.append(document.createTextNode('Tín hiệu SOS · ' + LEVELS[rec.status].short));
+                const tm = document.createElement('time'); tm.textContent = fmtTime(rec.id);
+                title.append(tl, tm);
+                const tx = document.createElement('div'); tx.className = 'noti-text'; tx.textContent = rec.phone + ' - ' + rec.desc;
+                body.append(title, tx); btn.append(dot, body); list.append(btn);
+            });
+        }
+        function toggleNoti(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) {
+                renderNoti();
+                panel.hidden = false;
+                document.getElementById('noti-btn').setAttribute('aria-expanded', 'true');
+                if (window.innerWidth <= 700) panel.style.top = (document.getElementById('noti-btn').getBoundingClientRect().bottom + 8) + 'px';
+            } else closeNoti();
+        }
+        function closeNoti() {
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) return;
+            panel.hidden = true;
+            document.getElementById('noti-btn').setAttribute('aria-expanded', 'false');
+            readCount = sosList.length;
+            try { localStorage.setItem(READ_KEY, readCount); } catch (e) {}
+            updateBadge();
+        }
+        function openNotiItem(id) {
+            closeNoti();
+            switchTab('map-view', document.getElementById('map-tab'));
+            setTimeout(() => {
+                const m = markerById[id], rec = sosList.find(r => r.id === id);
+                if (m && rec && map) { map.setView([rec.lat, rec.lng], 13); m.openPopup(); }
+            }, 400);
+        }
+        document.addEventListener('click', e => { if (!e.target.closest('.noti-wrap')) closeNoti(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNoti(); });
+        updateBadge();
+
+        /* ===== FORM SOS: 3 BƯỚC BẮT BUỘC → MỞ ẢNH / GIỌNG NÓI ===== */
+        const MAX_ACCURACY_M = 1000;   // sai số lớn hơn mức này (vd: định vị theo IP) thì KHÔNG chấp nhận
+        const GOOD_ACCURACY_M = 30;    // đạt mức này thì chốt vị trí ngay
+        const GEO_REFINE_MS = 15000;   // tối đa thời gian tinh chỉnh sau khi có tín hiệu đầu tiên
+        const GEO_STALE_MS = 5 * 60 * 1000; // vị trí cũ hơn 5 phút phải lấy lại
+        const MAX_PHOTOS = 3;
+        const el = id => document.getElementById(id);
+        const cleanPhone = v => v.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0');
+        const phoneOk = () => /^0\d{9}$/.test(cleanPhone(el('phone-number').value.trim()));
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        let geo = null, geoWatch = null, geoTimer = null, photos = [];
+
+        function refreshSteps() {
+            const ok = { phone: phoneOk(), desc: el('sos-text').value.trim().length > 0, geo: !!geo };
+            [['phone', ok.phone], ['desc', ok.desc], ['geo', ok.geo]].forEach(([k, v]) => {
+                const li = el('step-' + k);
+                li.classList.toggle('done', v);
+                li.querySelector('i').className = v ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+            });
+            const ready = ok.phone && ok.desc && ok.geo;
+            el('btn-photo').disabled = !ready;
+            el('btn-voice').disabled = !ready;
+            el('btn-submit').disabled = !ready;
+            el('lock-hint').hidden = ready;
+            if (!ready && listening) stopVoice();
+        }
+        el('phone-number').addEventListener('input', () => { if (phoneOk()) el('grp-phone').classList.remove('invalid'); refreshSteps(); });
+        el('phone-number').addEventListener('blur', () => { const v = el('phone-number').value.trim(); el('grp-phone').classList.toggle('invalid', !!v && !phoneOk()); });
+        el('sos-text').addEventListener('input', refreshSteps);
+
+        /* ---------- ĐỊNH VỊ THẬT (GPS / Geolocation API) ---------- */
+        function setGeoBtn(state) {
+            const b = el('btn-gps'), ic = b.querySelector('i'), tx = b.querySelector('span');
+            b.classList.toggle('done', state === 'done');
+            b.disabled = state === 'loading';
+            if (state === 'loading') { ic.className = 'fa-solid fa-spinner fa-spin'; tx.textContent = 'Đang lấy vị trí chính xác...'; }
+            else if (state === 'done') { ic.className = 'fa-solid fa-circle-check'; tx.textContent = 'Đã gửi định vị · bấm để cập nhật lại'; }
+            else { ic.className = 'fa-solid fa-location-crosshairs'; tx.textContent = 'Gửi định vị'; }
+        }
+        function showGeoInfo(html, isNode) { const g = el('geo-info'); g.hidden = false; g.replaceChildren(); if (isNode) g.append(html); else g.textContent = html; }
+        function showGeoAlert(title, text) { el('geo-alert-title').textContent = title; el('geo-alert-text').textContent = text; el('geo-alert').hidden = false; }
+        function stopGeoWatch() {
+            if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; }
+            if (geoTimer) { clearTimeout(geoTimer); geoTimer = null; }
+        }
+        function geoErrorMessage(err) {
+            if (err.code === 1) {
+                return isMobile
+                    ? ['Chưa truy cập được vị trí', 'Hãy bật Vị trí (GPS) trên điện thoại: vuốt thanh thông báo xuống và bật "Vị trí", hoặc vào Cài đặt › Vị trí. Sau đó cho phép trình duyệt dùng vị trí khi được hỏi (Cài đặt › Quyền của trình duyệt › Vị trí › Cho phép).']
+                    : ['Bạn đã chặn quyền vị trí', 'Bấm biểu tượng ổ khóa cạnh thanh địa chỉ › Vị trí › Cho phép, rồi bấm Thử lại.'];
+            }
+            if (err.code === 2) {
+                return isMobile
+                    ? ['Vị trí của điện thoại đang tắt hoặc không có tín hiệu', 'Hãy bật Vị trí (GPS) ở thanh thông báo hoặc Cài đặt, ra nơi thoáng rồi bấm Thử lại.']
+                    : ['Không xác định được vị trí', 'Hãy kiểm tra dịch vụ vị trí của hệ điều hành đã bật chưa và máy có kết nối Wi-Fi/mạng, rồi bấm Thử lại.'];
+            }
+            return ['Quá thời gian chờ định vị', 'Chưa nhận được tín hiệu GPS. Hãy ra nơi thoáng, bật Vị trí chế độ độ chính xác cao rồi bấm Thử lại.'];
+        }
+        function getLocation() {
+            el('geo-alert').hidden = true;
+            if (!('geolocation' in navigator)) { showGeoAlert('Thiết bị không hỗ trợ định vị', 'Hãy mở trang bằng Chrome hoặc Safari bản mới.'); return; }
+            if (!window.isSecureContext) { showGeoAlert('Trang chưa chạy ở chế độ bảo mật', 'Trình duyệt chỉ cho phép định vị khi trang chạy trên HTTPS hoặc localhost.'); return; }
+            stopGeoWatch(); geo = null; refreshSteps(); setGeoBtn('loading');
+            el('geo-info').hidden = true;
+            let best = null, finished = false;
+
+            const finish = () => {
+                if (finished) return; finished = true; stopGeoWatch();
+                if (best && best.accuracy <= MAX_ACCURACY_M) {
+                    geo = best; setGeoBtn('done');
+                    const q = best.accuracy <= GOOD_ACCURACY_M ? 'rất chính xác' : best.accuracy <= 100 ? 'chính xác' : 'tương đối';
+                    const box = document.createElement('span');
+                    box.append(document.createTextNode('Vĩ độ '), Object.assign(document.createElement('b'), { textContent: best.lat.toFixed(6) }),
+                        document.createTextNode(' · Kinh độ '), Object.assign(document.createElement('b'), { textContent: best.lng.toFixed(6) }),
+                        document.createTextNode(' · sai số ≈ ' + Math.round(best.accuracy) + ' m (' + q + ')'));
+                    showGeoInfo(box, true);
+                } else {
+                    setGeoBtn('idle'); el('geo-info').hidden = true;
+                    showGeoAlert('Vị trí chưa đủ chính xác', 'Thiết bị chỉ xác định được vị trí với sai số khoảng ' + Math.round(best.accuracy) + ' m. Hãy bật GPS / chế độ độ chính xác cao, ra nơi thoáng rồi bấm Thử lại.');
+                }
+                refreshSteps();
+            };
+
+            geoWatch = navigator.geolocation.watchPosition(pos => {
+                const c = pos.coords;
+                if (!best || c.accuracy < best.accuracy) best = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy, ts: Date.now() };
+                showGeoInfo('Đang tinh chỉnh vị trí... sai số hiện tại ≈ ' + Math.round(best.accuracy) + ' m');
+                if (!geoTimer) geoTimer = setTimeout(finish, GEO_REFINE_MS); // đếm giờ sau khi đã có tín hiệu đầu tiên (không tính lúc chờ người dùng bấm Cho phép)
+                if (best.accuracy <= GOOD_ACCURACY_M) finish();
+            }, err => {
+                if (finished) return;
+                if (best) { finish(); return; }
+                finished = true; stopGeoWatch(); setGeoBtn('idle'); el('geo-info').hidden = true;
+                const [t, m] = geoErrorMessage(err);
+                showGeoAlert(t, m);
+                if (isMobile && err.code !== 3) toast('Vui lòng bật vị trí (GPS) trên điện thoại rồi bấm lại.', true);
+                refreshSteps();
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+        }
+
+        /* ---------- HÌNH ẢNH (nén trước khi lưu) ---------- */
+        function pickPhoto() {
+            if (photos.length >= MAX_PHOTOS) { toast('Tối đa ' + MAX_PHOTOS + ' ảnh cho mỗi yêu cầu.', true); return; }
+            el('photo-input').click();
+        }
+        function compressImage(file, maxSide = 800, quality = 0.65) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file), img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, maxSide / Math.max(img.width, img.height));
+                    const cv = document.createElement('canvas');
+                    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                    URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); };
+                img.src = url;
+            });
+        }
+        el('photo-input').addEventListener('change', async e => {
+            const files = Array.from(e.target.files).slice(0, MAX_PHOTOS - photos.length);
+            for (const f of files) {
+                try { photos.push(await compressImage(f)); } catch (err) { toast('Không đọc được một ảnh, vui lòng chọn ảnh khác.', true); }
+            }
+            e.target.value = ''; renderThumbs();
+        });
+        function renderThumbs() {
+            const box = el('thumbs'); box.replaceChildren();
+            photos.forEach((src, i) => {
+                const t = document.createElement('div'), im = document.createElement('img'), x = document.createElement('button');
+                t.className = 'thumb'; im.src = src; im.alt = 'Ảnh đính kèm ' + (i + 1);
+                x.type = 'button'; x.setAttribute('aria-label', 'Xóa ảnh ' + (i + 1)); x.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                x.onclick = () => { photos.splice(i, 1); renderThumbs(); };
+                t.append(im, x); box.append(t);
+            });
+            el('photo-label').textContent = photos.length ? 'Hình ảnh (' + photos.length + '/' + MAX_PHOTOS + ')' : 'Hình ảnh';
+            el('btn-photo').classList.toggle('active', photos.length > 0);
+        }
+
+        /* ---------- GIỌNG NÓI → CHỮ, GHI NỐI VÀO Ô MÔ TẢ ---------- */
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognizer = null, listening = false;
+        function setVoiceUI(on) {
+            el('btn-voice').classList.toggle('listening', on);
+            el('voice-label').textContent = on ? 'Đang nghe - bấm để dừng' : 'Giọng nói';
+            el('voice-live').hidden = !on;
+        }
+        function toggleVoice() {
+            if (listening) { stopVoice(); return; }
+            if (!SpeechRec) { toast('Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Hãy dùng Chrome hoặc Safari bản mới.', true); return; }
+            listening = true; setVoiceUI(true); startRecognizer();
+        }
+        function startRecognizer() {
+            const ta = el('sos-text');
+            let base = ta.value.trim();
+            const r = new SpeechRec();
+            r.lang = 'vi-VN'; r.continuous = true; r.interimResults = true;
+            r.onresult = e => {
+                let interim = '', fin = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    const t = e.results[i][0].transcript;
+                    if (e.results[i].isFinal) fin += t; else interim += t;
+                }
+                if (fin) base = (base + ' ' + fin.trim()).trim();
+                ta.value = (base + ' ' + interim).trim();
+                refreshSteps();
+            };
+            r.onerror = e => {
+                if (e.error === 'no-speech' || e.error === 'aborted') return;
+                listening = false;
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Chưa được cấp quyền micro. Hãy cho phép micro trong cài đặt trình duyệt.', true);
+                else if (e.error === 'network') toast('Nhận diện giọng nói cần kết nối mạng.', true);
+                else if (e.error === 'audio-capture') toast('Không tìm thấy micro trên thiết bị.', true);
+                else toast('Không nhận diện được giọng nói, vui lòng thử lại.', true);
+            };
+            r.onend = () => {
+                if (listening) { try { startRecognizer(); } catch (err) { listening = false; setVoiceUI(false); } }
+                else setVoiceUI(false);
+            };
+            recognizer = r;
+            try { r.start(); } catch (err) { listening = false; setVoiceUI(false); }
+        }
+        function stopVoice() {
+            listening = false;
+            if (recognizer) { try { recognizer.stop(); } catch (e) {} }
+            setVoiceUI(false);
+        }
+
+        /* ---------- GỬI SOS: dùng đúng tọa độ GPS đã lấy ---------- */
+        function submitSOS() {
+            const desc = el('sos-text').value.trim();
+            if (!phoneOk()) { el('grp-phone').classList.add('invalid'); el('phone-number').focus(); toast('Vui lòng nhập số điện thoại hợp lệ.', true); return; }
+            if (!desc) { el('sos-text').focus(); toast('Vui lòng mô tả tình trạng.', true); return; }
+            if (!geo) { toast('Vui lòng bấm "Gửi định vị" để gửi vị trí của bạn.', true); return; }
+            if (Date.now() - geo.ts > GEO_STALE_MS) {
+                geo = null; setGeoBtn('idle'); el('geo-info').hidden = true; refreshSteps();
+                toast('Vị trí đã cũ, vui lòng bấm "Gửi định vị" lại để cập nhật.', true); return;
+            }
+            stopVoice();
+            const a = assessSOS(desc);
+            const rec = {
+                id: Date.now(), phone: cleanPhone(el('phone-number').value.trim()), desc, status: a.status,
+                lat: geo.lat, lng: geo.lng, accuracy: Math.round(geo.accuracy), images: photos.slice()
+            };
+            if (isOnline) {
+                sosList.push(rec); saveJSON(SOS_KEY, sosList);
+                showSOS(rec);
+                toast('Đã gửi SOS · AI đánh giá: ' + LEVELS[rec.status].name);
+            } else {
+                pendingList.push(rec); saveJSON(PENDING_KEY, pendingList);
+                toast('Đang offline: đã lưu gói tin (' + LEVELS[rec.status].short + '), sẽ tự đồng bộ khi có mạng.');
+            }
+            el('phone-number').value = ''; el('sos-text').value = '';
+            geo = null; photos = []; renderThumbs(); setGeoBtn('idle'); el('geo-info').hidden = true; el('geo-alert').hidden = true;
+            refreshSteps();
+        }
+        refreshSteps();
     </script>
 </body>
 </html>
