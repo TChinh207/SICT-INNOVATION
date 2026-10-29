@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefLink AI - Hệ Sinh Thái Cứu Trợ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #202a39;
+            background: #f4f6f9;
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+            --ink: #202a39;
+            --muted: #7b8796;
+            --line: #e8ecf1;
+            --red: #e94c4c;
+            --green: #239b72;
+            --shadow: 0 18px 55px rgba(29, 43, 63, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+        body { min-width: 320px; min-height: 100vh; margin: 0; }
+        button, input, textarea { font: inherit; }
+        button { color: inherit; }
+
+        .navbar {
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            min-height: 76px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 0 clamp(20px, 5vw, 72px);
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.94);
+        }
+        .logo { display: flex; align-items: center; gap: 11px; color: var(--ink); font-size: 18px; font-weight: 750; letter-spacing: -0.045em; white-space: nowrap; }
+        .logo i { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: #fff0ee; color: var(--red); font-size: 17px; }
+        .network-toggle { display: flex; min-height: 38px; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #e7efe9; border-radius: 999px; background: #f7fbf8; color: #52665b; font-size: 12px; }
+        #network-status { color: var(--green); font-size: 12px; font-weight: 650; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 19px; margin-left: 3px; }
+        .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+        .slider { position: absolute; inset: 0; cursor: pointer; border-radius: 99px; background: #cbd2da; transition: background 180ms ease; }
+        .slider::before { position: absolute; top: 3px; left: 3px; width: 13px; height: 13px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; content: ""; transition: transform 180ms ease; }
+        .switch input:checked + .slider { background: #42ad81; }
+        .switch input:checked + .slider::before { transform: translateX(15px); }
+        .switch input:focus-visible + .slider { outline: 3px solid #a8dfc7; outline-offset: 3px; }
+
+        .nav-right, .nav-actions { display: flex; align-items: center; gap: 10px; }
+        .notification-bell { position: relative; display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: white; color: #687486; font-size: 15px; }
+        .notification-bell .badge { position: absolute; top: -5px; right: -5px; min-width: 17px; padding: 2px 4px; border: 2px solid white; border-radius: 99px; background: var(--red); color: white; font-size: 9px; font-weight: 700; text-align: center; }
+        .btn { min-height: 40px; padding: 0 15px; border: 1px solid transparent; border-radius: 10px; font-size: 12px; font-weight: 650; cursor: pointer; transition: transform 160ms ease, background 160ms ease; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-signin { border-color: var(--line); background: white; color: #536071; }
+        .btn-signup { background: var(--ink); color: white; }
+
+        .tabs-container { display: flex; gap: 8px; padding: 14px clamp(20px, 5vw, 72px) 0; border-bottom: 1px solid var(--line); background: white; }
+        .tab-btn { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 9px; padding: 0 19px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #8993a0; font-size: 12px; font-weight: 700; letter-spacing: 0.035em; cursor: pointer; transition: color 160ms ease, border-color 160ms ease; }
+        .tab-btn:hover { color: var(--ink); }
+        .tab-btn.active { border-bottom-color: var(--red); color: var(--red); }
+
+        .viewport { min-height: calc(100vh - 137px); }
+        .view-section { display: none; width: 100%; min-height: calc(100vh - 137px); }
+        .view-section.active { display: flex; }
+
+        #sos-view { align-items: center; justify-content: center; padding: 56px 28px 72px; background: radial-gradient(ellipse at 15% 5%, #fff 0, #f4f6f9 56%); }
+        .sos-layout { display: grid; width: min(1080px, 100%); grid-template-columns: minmax(260px, 0.76fr) minmax(440px, 1fr); align-items: center; gap: clamp(35px, 7vw, 92px); }
+        .sos-intro { padding: 16px 0; }
+        .intro-kicker { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px; color: var(--red); font-size: 10px; font-weight: 750; letter-spacing: 0.14em; text-transform: uppercase; }
+        .intro-kicker::before { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 5px #e94c4c18; content: ""; }
+        .sos-intro h1 { max-width: 440px; margin: 0; color: var(--ink); font-size: clamp(38px, 4.5vw, 58px); font-weight: 720; letter-spacing: -0.065em; line-height: 1.08; }
+        .sos-intro h1 span { color: var(--red); }
+        .intro-copy { max-width: 390px; margin: 20px 0 29px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+        .response-note { display: flex; max-width: 365px; align-items: flex-start; gap: 12px; padding: 15px; border: 1px solid #e8ecf1; border-radius: 14px; background: rgba(255,255,255,.75); color: #647184; font-size: 11px; line-height: 1.6; }
+        .response-note i { margin-top: 2px; color: #e2a632; font-size: 15px; }
+        .response-note strong { display: block; margin-bottom: 2px; color: var(--ink); font-size: 12px; }
+
+        .form-container { width: 100%; padding: clamp(22px, 3.2vw, 34px); border: 1px solid rgba(230, 234, 240, .9); border-radius: 20px; background: white; box-shadow: var(--shadow); }
+        .form-header { margin-bottom: 25px; }
+        .form-header h2 { margin: 0 0 6px; color: var(--ink); font-size: 20px; font-weight: 720; letter-spacing: -0.035em; }
+        .form-header p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        .input-group { margin-bottom: 17px; }
+        .input-group label { display: block; margin-bottom: 8px; color: #475467; font-size: 11px; font-weight: 700; }
+        input[type="tel"], input[type="text"]#full-name, textarea { width: 100%; border: 1px solid #e4e8ee; border-radius: 10px; outline: none; background: #fbfcfd; color: var(--ink); font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        input[type="tel"], input[type="text"]#full-name { height: 43px; padding: 0 13px; }
+        textarea { min-height: 83px; padding: 12px 13px; resize: vertical; line-height: 1.55; }
+        input[type="tel"]::placeholder, input#full-name::placeholder, textarea::placeholder { color: #a4adba; }
+        input[type="tel"]:focus, input#full-name:focus, textarea:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
+        .multimodal-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+        .tool-btn { display: flex; min-height: 62px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px solid #e7ebf0; border-radius: 11px; background: #fbfcfd; color: #738093; font-size: 10px; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
+        .tool-btn i { font-size: 14px; }
+        .tool-btn:hover { border-color: #c9d8f0; background: #f6f9ff; color: #526f9b; }
+        .tool-btn.active { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .btn-submit-sos { display: flex; width: 100%; min-height: 50px; align-items: center; justify-content: center; gap: 10px; margin-top: 21px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #f15b54, #df403f); box-shadow: 0 8px 18px #e94c4c30; color: white; font-size: 12px; font-weight: 800; letter-spacing: .06em; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
+        .btn-submit-sos::before { font-family: "Font Awesome 6 Free"; font-weight: 900; content: "\f071"; }
+        .btn-submit-sos:hover { transform: translateY(-2px); box-shadow: 0 12px 22px #e94c4c42; }
+        .form-footnote { margin: 12px 0 0; color: #99a2af; font-size: 10px; text-align: center; }
+
+        #map-view { min-height: calc(100vh - 137px); gap: 16px; padding: 20px; background: #f4f6f9; }
+        #map { min-width: 0; min-height: 580px; flex: 1; overflow: hidden; border: 1px solid #e5eaf0; border-radius: 16px; background: #e8edf2; box-shadow: 0 8px 26px rgba(29,43,63,.06); z-index: 1; }
+        .dashboard-sidebar { display: flex; width: 350px; flex: 0 0 350px; flex-direction: column; overflow: hidden; border: 1px solid #e8ecf1; border-radius: 16px; background: white; box-shadow: 0 8px 26px rgba(29,43,63,.05); z-index: 2; }
+        .sidebar-header { padding: 21px 19px 18px; border-bottom: 1px solid var(--line); }
+        .sidebar-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .sidebar-title h3 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 720; }
+        .live-label { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+        .live-label::before { width: 6px; height: 6px; border-radius: 50%; background: #36b985; box-shadow: 0 0 0 4px #36b9851c; content: ""; }
+        .sidebar-caption { margin: 6px 0 0; color: #929cab; font-size: 10px; }
+        .stat-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 18px; }
+        .stat-box { min-width: 0; padding: 10px 6px 9px; border: 1px solid; border-radius: 10px; font-size: 8px; font-weight: 750; line-height: 1.35; text-align: center; }
+        .stat-box.red { border-color: #f8ddda; background: #fff6f5; color: #df514b; }
+        .stat-box.yellow { border-color: #f3e7c7; background: #fffbf1; color: #b98a24; }
+        .stat-box.green { border-color: #d9eee4; background: #f4fbf7; color: #278d68; }
+        .stat-num { display: block; margin-top: 5px; color: var(--ink); font-size: 19px; font-weight: 750; }
+        .feed-heading { padding: 17px 19px 2px; color: #8a95a4; font-size: 9px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+        .sos-feed { display: flex; flex: 1; flex-direction: column; gap: 9px; overflow-y: auto; padding: 13px 15px 18px; }
+        .feed-item { padding: 12px 13px; border: 1px solid #edf0f4; border-left: 3px solid; border-radius: 10px; background: #fff; color: #778293; font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
+        .feed-item strong { display: inline-block; margin-bottom: 3px; font-size: 11px; }
+        .feed-item i { color: #7d8795; font-size: 10px; }
+        #empty-feed { display: grid; min-height: 170px; place-content: center; gap: 9px; color: #9aa4b1; font-size: 11px; text-align: center; }
+        #empty-feed::before { color: #c0c9d4; font-family: "Font Awesome 6 Free"; font-size: 25px; content: "\f06a"; }
+        #map-view { height: calc(100vh - 137px); }
+        #map { min-height: 0; height: 100%; }
+        .custom-pin { border-radius: 50%; border: 2px solid white; }
+
+        button:focus-visible { outline: 3px solid #92b8ee; outline-offset: 3px; }
+        @media (max-width: 900px) {
+            .sos-layout { grid-template-columns: minmax(220px, .7fr) minmax(360px, 1fr); gap: 32px; }
+            .dashboard-sidebar { width: 310px; flex-basis: 310px; }
+        }
+        @media (max-width: 700px) {
+            .navbar { min-height: 68px; flex-wrap: wrap; gap: 10px; padding: 12px 18px; }
+            .logo { font-size: 16px; }
+            .logo i { width: 34px; height: 34px; }
+            .network-toggle { order: 3; width: 100%; justify-content: center; }
+            .nav-right { margin-left: auto; }
+            .nav-actions { display: none; }
+            .tabs-container { padding: 10px 14px 0; }
+            .tab-btn { flex: 1; gap: 7px; padding: 0 7px; font-size: 10px; }
+            .viewport, .view-section { min-height: calc(100vh - 151px); }
+            #sos-view { align-items: flex-start; padding: 37px 17px 46px; }
+            .sos-layout { width: 100%; grid-template-columns: 1fr; gap: 24px; }
+            .sos-intro { padding: 0; }
+            .intro-kicker { margin-bottom: 14px; }
+            .sos-intro h1 { max-width: 500px; font-size: clamp(37px, 10vw, 52px); }
+            .intro-copy { margin: 13px 0 17px; font-size: 12px; }
+            .response-note { max-width: none; padding: 12px; }
+            .form-container { padding: 22px 18px; border-radius: 16px; }
+            #map-view { height: auto; min-height: auto; flex-direction: column; padding: 12px; }
+            #map { height: 48vh; min-height: 48vh; flex: none; }
+            .dashboard-sidebar { width: 100%; min-height: 330px; flex: none; }
+            .sos-feed { max-height: 270px; }
+        }
+        @media (max-width: 390px) {
+            .notification-bell { width: 36px; height: 36px; }
+            .multimodal-tools { gap: 6px; }
+            .tool-btn { min-height: 58px; font-size: 9px; }
+            .stat-box { font-size: 7px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+
+        /* ===== AUTH: ĐĂNG NHẬP / ĐĂNG KÝ ===== */
+        [hidden] { display: none !important; }
+        .auth-overlay { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 20px; background: rgba(20, 28, 40, .55); backdrop-filter: blur(3px); overflow-y: auto; }
+        .auth-modal { display: grid; width: min(920px, 100%); max-height: calc(100vh - 40px); grid-template-columns: 0.82fr 1fr; overflow: hidden; border-radius: 22px; background: white; box-shadow: 0 30px 80px rgba(15, 23, 36, .35); animation: authIn 220ms ease; }
+        @keyframes authIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+        .auth-aside { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 34px 30px; background: linear-gradient(160deg, #26324a 0%, #1b2436 100%); color: #e9eef6; }
+        .auth-aside .logo { color: white; }
+        .auth-aside .logo i { background: rgba(233, 76, 76, .18); }
+        .auth-aside h2 { margin: 26px 0 10px; font-size: 25px; font-weight: 720; letter-spacing: -0.045em; line-height: 1.2; }
+        .auth-aside h2 span { color: #ff8b84; }
+        .auth-aside > div > p { margin: 0; color: #a9b6c9; font-size: 12px; line-height: 1.7; }
+        .auth-points { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
+        .auth-points li { display: flex; gap: 11px; color: #cbd5e4; font-size: 11px; line-height: 1.55; }
+        .auth-points i { display: grid; flex: 0 0 28px; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: rgba(255,255,255,.08); color: #ff8b84; font-size: 12px; }
+        .auth-points strong { display: block; color: white; font-size: 12px; }
+        .auth-main { position: relative; max-height: calc(100vh - 40px); overflow-y: auto; padding: 30px clamp(22px, 3.4vw, 38px) 28px; }
+        .auth-close { position: absolute; top: 14px; right: 14px; display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 10px; background: #f2f4f7; color: #6b7686; cursor: pointer; }
+        .auth-close:hover { background: #e8ecf1; color: var(--ink); }
+        .auth-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: calc(100% - 44px); padding: 4px; margin-bottom: 22px; border-radius: 12px; background: #f2f4f7; }
+        .auth-switch button { min-height: 38px; border: 0; border-radius: 9px; background: transparent; color: #7b8796; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 160ms ease, color 160ms ease; }
+        .auth-switch button.active { background: white; box-shadow: 0 1px 4px #1d2b3f1a; color: var(--ink); }
+        .auth-main h3 { margin: 0 0 5px; color: var(--ink); font-size: 20px; font-weight: 720; letter-spacing: -0.035em; }
+        .auth-sub { margin: 0 0 20px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        .auth-alert { display: flex; gap: 10px; padding: 11px 13px; margin-bottom: 16px; border: 1px solid #f6e2b8; border-radius: 11px; background: #fffaf0; color: #8a6414; font-size: 11px; line-height: 1.55; }
+        .auth-alert.error { border-color: #f8ddda; background: #fff6f5; color: #c93a35; }
+        .auth-alert i { margin-top: 2px; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; margin-bottom: 7px; color: #475467; font-size: 11px; font-weight: 700; }
+        .field label small { color: #a0a9b6; font-weight: 500; }
+        .auth-input { width: 100%; height: 43px; padding: 0 13px; border: 1px solid #e4e8ee; border-radius: 10px; outline: none; background: #fbfcfd; color: var(--ink); font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        .auth-input::placeholder { color: #a4adba; }
+        .auth-input:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
+        .field.invalid .auth-input { border-color: #ee8a85; background: #fffafa; }
+        .field-error { display: none; margin-top: 6px; color: #d73f3a; font-size: 10px; }
+        .field.invalid .field-error { display: block; }
+        .pw-wrap { position: relative; }
+        .pw-wrap .auth-input { padding-right: 44px; }
+        .pw-toggle { position: absolute; top: 4px; right: 4px; display: grid; width: 35px; height: 35px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #8a95a4; cursor: pointer; }
+        .pw-toggle:hover { color: var(--ink); }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .auth-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 18px; font-size: 11px; }
+        .check { display: flex; align-items: flex-start; gap: 8px; color: #647184; line-height: 1.5; cursor: pointer; }
+        .check input { width: 15px; height: 15px; margin: 1px 0 0; accent-color: var(--red); flex: none; }
+        .link-btn { padding: 0; border: 0; background: none; color: var(--red); font-size: 11px; font-weight: 650; cursor: pointer; }
+        .link-btn:hover { text-decoration: underline; }
+        .btn-auth { display: flex; width: 100%; min-height: 47px; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #f15b54, #df403f); box-shadow: 0 8px 18px #e94c4c30; color: white; font-size: 12px; font-weight: 800; letter-spacing: .04em; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
+        .btn-auth:hover { transform: translateY(-1px); box-shadow: 0 12px 22px #e94c4c42; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 17px 0; color: #a0a9b6; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+        .auth-divider::before, .auth-divider::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+        .btn-vneid { display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: center; gap: 10px; border: 1px solid #e0e6ee; border-radius: 11px; background: #fff; color: #3d4b60; font-size: 12px; font-weight: 700; cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+        .btn-vneid:hover { border-color: #c9d6ea; background: #f7f9fc; }
+        .btn-vneid i { color: #c8102e; }
+        .soon { padding: 2px 7px; border-radius: 99px; background: #eef2f7; color: #6b7686; font-size: 9px; font-weight: 700; }
+        .auth-guest { display: flex; gap: 10px; padding: 12px 13px; margin-top: 16px; border: 1px dashed #f1c9c6; border-radius: 12px; background: #fff8f7; color: #7a5a58; font-size: 11px; line-height: 1.55; }
+        .auth-guest i { margin-top: 2px; color: var(--red); }
+        .auth-guest .link-btn { display: inline; }
+        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .role-card { display: flex; flex-direction: column; gap: 4px; padding: 11px 12px; border: 1px solid #e5e9ef; border-radius: 11px; background: white; color: #475467; text-align: left; cursor: pointer; transition: border-color 150ms ease, background 150ms ease; }
+        .role-card i { color: #8a95a4; font-size: 14px; }
+        .role-card strong { color: var(--ink); font-size: 11px; line-height: 1.35; }
+        .role-card span { color: #98a2b0; font-size: 10px; line-height: 1.4; }
+        .role-card:hover { border-color: #f0a6a1; }
+        .role-card.selected { border-color: #f1b4af; background: #fff4f2; }
+        .role-card.selected i { color: var(--red); }
+        .verify-note { display: flex; gap: 9px; padding: 11px 12px; margin: 2px 0 14px; border: 1px solid #d9e6f7; border-radius: 11px; background: #f5f9ff; color: #4d6a92; font-size: 10px; line-height: 1.55; }
+        .verify-note i { margin-top: 2px; }
+        .auth-success { display: grid; place-items: center; gap: 10px; padding: 30px 6px 10px; text-align: center; }
+        .auth-success .ok { display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%; background: #f1fbf6; color: var(--green); font-size: 24px; }
+        .auth-success p { max-width: 320px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+        .auth-success .btn-auth { margin-top: 12px; }
+        .user-chip { display: flex; align-items: center; gap: 9px; padding: 4px 6px 4px 5px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+        .user-avatar { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 9px; background: #fff0ee; color: var(--red); font-size: 12px; font-weight: 750; }
+        .user-meta { display: flex; flex-direction: column; max-width: 150px; line-height: 1.25; }
+        .user-meta b { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+        .user-meta span { color: #8a95a4; font-size: 10px; }
+        .user-meta span.pending { color: #b98a24; }
+        .btn-logout { display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 8px; background: #f2f4f7; color: #6b7686; cursor: pointer; }
+        .btn-logout:hover { background: #fde9e7; color: var(--red); }
+        @media (max-width: 820px) {
+            .auth-modal { grid-template-columns: 1fr; }
+            .auth-aside { display: none; }
+            .auth-main { padding-top: 26px; }
+        }
+        @media (max-width: 700px) {
+            .nav-actions { display: flex; gap: 6px; }
+            .nav-actions .btn { min-height: 36px; padding: 0 11px; }
+            .user-meta { display: none; }
+            .field-row, .role-grid { grid-template-columns: 1fr; }
+            .auth-overlay { align-items: end; padding: 0; }
+            .auth-modal { max-height: 94vh; border-radius: 22px 22px 0 0; }
+            .auth-main { max-height: 94vh; }
+        }
+
+        /* ===== THÔNG BÁO NHANH ===== */
+        .toast { position: fixed; left: 50%; bottom: 26px; z-index: 4000; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; background: #1f2a3b; box-shadow: 0 12px 30px rgba(15,23,36,.3); color: white; font-size: 12px; line-height: 1.5; transform: translateX(-50%); animation: authIn 200ms ease; }
+        .toast.error { background: #c93a35; }
+
+        /* ===== THÔNG BÁO ===== */
+        .noti-wrap { position: relative; }
+        button.notification-bell { padding: 0; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        button.notification-bell:hover, button.notification-bell[aria-expanded="true"] { border-color: #f0c9c6; background: #fff6f5; color: var(--red); }
+        .notification-bell .badge { display: none; }
+        .noti-panel { position: absolute; top: calc(100% + 10px); right: 0; z-index: 1600; width: 370px; max-width: calc(100vw - 24px); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 22px 60px rgba(15,23,36,.2); animation: authIn 180ms ease; }
+        .noti-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 17px 12px; border-bottom: 1px solid var(--line); }
+        .noti-head h4 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 720; }
+        .noti-head span { color: #8a95a4; font-size: 10px; }
+        .noti-list { max-height: min(60vh, 420px); overflow-y: auto; }
+        .noti-item { display: flex; width: 100%; gap: 11px; padding: 13px 17px; border: 0; border-bottom: 1px solid #f1f3f6; background: white; text-align: left; cursor: pointer; }
+        .noti-item:hover { background: #f8fafc; }
+        .noti-item.unread { background: #fff9f8; }
+        .noti-dot { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: white; font-size: 13px; }
+        .noti-body { min-width: 0; flex: 1; }
+        .noti-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink); font-size: 12px; font-weight: 700; }
+        .noti-title time { flex: none; color: #9aa4b1; font-size: 10px; font-weight: 500; }
+        .noti-text { margin-top: 3px; overflow: hidden; color: #697587; font-size: 11px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+        .noti-new { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--red); }
+        .noti-empty { display: grid; gap: 8px; padding: 38px 20px; color: #9aa4b1; font-size: 12px; text-align: center; }
+        .noti-empty i { color: #c4ccd6; font-size: 26px; }
+        @media (max-width: 700px) { .noti-panel { position: fixed; right: 12px; left: 12px; width: auto; max-width: none; } }
+
+        /* ===== FORM SOS: 3 BƯỚC BẮT BUỘC + PHẦN TÙY CHỌN ===== */
+        .req { color: var(--red); }
+        .opt-tag { color: #a0a9b6; font-weight: 500; }
+        .label-note { display: block; margin: -4px 0 8px; color: #a0a9b6; font-size: 10px; font-weight: 500; }
+        .steps { display: flex; gap: 6px; margin: 0 0 20px; padding: 0; list-style: none; }
+        .steps li { display: flex; flex: 1; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px; border: 1px solid #e7ebf0; border-radius: 9px; background: #fbfcfd; color: #98a2b0; font-size: 10px; font-weight: 700; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
+        .steps li.done { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .input-group.invalid input, .input-group.invalid textarea { border-color: #ee8a85; background: #fffafa; }
+        .inline-err { display: none; margin-top: 6px; color: #d73f3a; font-size: 10px; }
+        .input-group.invalid .inline-err { display: block; }
+        .voice-live { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--red); font-size: 10px; }
+        .voice-live::before { width: 7px; height: 7px; border-radius: 50%; background: var(--red); content: ""; animation: rec 1s ease-in-out infinite; }
+        @keyframes rec { 50% { opacity: .25; } }
+
+        .btn-geo { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 9px; border: 1.5px solid #f1b4af; border-radius: 11px; background: #fff6f5; color: #d9443f; font-size: 12px; font-weight: 750; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        .btn-geo:hover:not(:disabled) { background: #ffeeed; }
+        .btn-geo:disabled { cursor: progress; }
+        .btn-geo.done { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .geo-info { margin-top: 8px; color: #647184; font-size: 10px; line-height: 1.6; }
+        .geo-info b { color: var(--ink); }
+        .geo-alert { display: flex; gap: 10px; padding: 12px 13px; margin-top: 10px; border: 1px solid #f8ddda; border-radius: 11px; background: #fff6f5; color: #b93631; font-size: 11px; line-height: 1.6; }
+        .geo-alert > i { margin-top: 2px; }
+        .geo-alert strong { display: block; margin-bottom: 2px; }
+        .geo-alert .link-btn { margin-top: 6px; }
+
+        .multimodal-tools.two { grid-template-columns: repeat(2, 1fr); }
+        .tool-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .tool-btn:disabled:hover { border-color: #e7ebf0; background: #fbfcfd; color: #738093; }
+        .tool-btn.listening { border-color: #f1b4af; background: #fff4f2; color: var(--red); }
+        .tool-btn.listening i { animation: rec 1s ease-in-out infinite; }
+        .lock-hint { margin: 9px 0 0; color: #98a2b0; font-size: 10px; line-height: 1.5; }
+        .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .thumb { position: relative; width: 60px; height: 60px; overflow: hidden; border: 1px solid #e4e8ee; border-radius: 9px; }
+        .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .thumb button { position: absolute; top: 3px; right: 3px; display: grid; width: 18px; height: 18px; place-items: center; border: 0; border-radius: 50%; background: rgba(20,28,40,.65); color: white; font-size: 9px; cursor: pointer; }
+        .btn-submit-sos:disabled { opacity: .45; box-shadow: none; transform: none; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo"><i class="fa-solid fa-microchip"></i> ReliefLink AI</div>
+        <div class="network-toggle" title="Chuyển đổi trạng thái kết nối">
+            <i class="fa-solid fa-wifi" id="wifi-icon" style="color: #4CAF50;"></i>
+            <span id="network-status">Đang Online</span>
+            <label class="switch">
+                <input type="checkbox" id="network-checkbox" checked onchange="toggleNetwork()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="nav-right">
+            <div class="noti-wrap">
+                <button type="button" class="notification-bell" id="noti-btn" aria-label="Thông báo" aria-haspopup="true" aria-expanded="false" aria-controls="noti-panel" onclick="toggleNoti(event)">
+                    <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+                </button>
+                <div class="noti-panel" id="noti-panel" hidden>
+                    <div class="noti-head"><h4>Thông báo</h4><span id="noti-sub"></span></div>
+                    <div class="noti-list" id="noti-list"></div>
+                </div>
+            </div>
+            <div class="nav-actions" id="nav-actions">
+                <button class="btn btn-signin" onclick="openAuth('login')">Đăng nhập</button>
+                <button class="btn btn-signup" onclick="openAuth('register')">Đăng ký</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="tabs-container" role="tablist" aria-label="Chế độ ReliefLink">
+        <button id="sos-tab" class="tab-btn active" role="tab" aria-controls="sos-view" aria-selected="true" onclick="switchTab('sos-view', this)"><i class="fa-solid fa-triangle-exclamation"></i> CỔNG SOS</button>
+        <button id="map-tab" class="tab-btn" role="tab" aria-controls="map-view" aria-selected="false" onclick="switchTab('map-view', this)"><i class="fa-solid fa-map-location-dot"></i> BẢN ĐỒ ĐIỀU PHỐI</button>
+    </div>
+
+    <main class="viewport">
+        <!-- FORM SOS -->
+        <section id="sos-view" class="view-section active" role="tabpanel" aria-labelledby="sos-tab">
+            <div class="sos-layout">
+                <div class="sos-intro">
+                    <p class="intro-kicker">ReliefLink response network</p>
+                    <h1>Kết nối cứu trợ.<br><span>Trao gửi hy vọng.</span></h1>
+                    <p class="intro-copy">Gửi tín hiệu khẩn cấp để đội ngũ điều phối nắm bắt tình hình và kết nối nguồn lực hỗ trợ kịp thời.</p>
+                    <div class="response-note">
+                        <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+                        <div><strong>Thông tin của bạn rất quan trọng</strong>Hãy mô tả ngắn gọn vị trí và nhu cầu ưu tiên để việc hỗ trợ được chính xác hơn.</div>
+                    </div>
+                </div>
+                <div class="form-container">
+                <div class="form-header">
+                    <h2>Gửi yêu cầu cứu trợ</h2>
+                    <p>Hệ thống AI sẽ tự động phân tích và điều phối nguồn lực</p>
+                </div>
+                <ol class="steps" id="steps" aria-label="4 thông tin bắt buộc">
+                    <li id="step-name"><i class="fa-regular fa-circle"></i> Họ tên</li>
+                    <li id="step-phone"><i class="fa-regular fa-circle"></i> SĐT</li>
+                    <li id="step-desc"><i class="fa-regular fa-circle"></i> Mô tả</li>
+                    <li id="step-geo"><i class="fa-regular fa-circle"></i> Định vị</li>
+                </ol>
+                <div class="input-group" id="grp-name">
+                    <label for="full-name">Họ và tên <span class="req">*</span></label>
+                    <input type="text" id="full-name" maxlength="80" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="name">
+                    <div class="inline-err">Vui lòng nhập họ và tên (ít nhất 2 ký tự).</div>
+                </div>
+                <div class="input-group" id="grp-phone">
+                    <label for="phone-number">Số điện thoại liên hệ <span class="req">*</span></label>
+                    <input type="tel" id="phone-number" inputmode="tel" maxlength="16" placeholder="Ví dụ: 09xx xxx xxx" autocomplete="tel">
+                    <div class="inline-err">Số điện thoại gồm 10 chữ số, bắt đầu bằng 0 (hoặc +84).</div>
+                </div>
+                <div class="input-group" id="grp-desc">
+                    <label for="sos-text">Mô tả tình trạng <span class="req">*</span></label>
+                    <textarea id="sos-text" placeholder="Mô tả ngắn gọn tình hình và vị trí hiện tại..."></textarea>
+                    <div class="voice-live" id="voice-live" hidden>Đang nghe - hãy nói tiếng Việt, lời nói sẽ được ghi vào ô này</div>
+                </div>
+                <div class="input-group">
+                    <label>Vị trí hiện tại <span class="req">*</span></label>
+                    <span class="label-note">Lấy trực tiếp từ GPS của thiết bị, không dùng tọa độ giả lập</span>
+                    <button type="button" class="btn-geo" id="btn-gps" onclick="getLocation()"><i class="fa-solid fa-location-crosshairs"></i><span>Gửi định vị</span></button>
+                    <div class="geo-info" id="geo-info" hidden></div>
+                    <div class="geo-alert" id="geo-alert" role="alert" hidden>
+                        <i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i>
+                        <div><strong id="geo-alert-title"></strong><span id="geo-alert-text"></span><br><button type="button" class="link-btn" onclick="getLocation()">Thử lại</button></div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Bổ sung thông tin <span class="opt-tag">(không bắt buộc)</span></label>
+                    <div class="multimodal-tools two">
+                        <button type="button" class="tool-btn" id="btn-photo" onclick="pickPhoto()" disabled><i class="fa-solid fa-camera"></i><span id="photo-label">Hình ảnh</span></button>
+                        <button type="button" class="tool-btn" id="btn-voice" onclick="toggleVoice()" disabled><i class="fa-solid fa-microphone"></i><span id="voice-label">Giọng nói</span></button>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" multiple hidden>
+                    <div class="thumbs" id="thumbs"></div>
+                    <p class="lock-hint" id="lock-hint"><i class="fa-solid fa-lock" aria-hidden="true"></i> Nhập đủ họ tên, số điện thoại, mô tả và bấm <b>Gửi định vị</b> để mở phần này.</p>
+                </div>
+                <button class="btn-submit-sos" id="btn-submit" onclick="submitSOS()" disabled>GỬI TÍN HIỆU KHẨN CẤP</button>
+                <p class="form-footnote"><i class="fa-solid fa-lock" aria-hidden="true"></i> Chỉ chia sẻ thông tin cần thiết cho công tác cứu trợ</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAP & DASHBOARD -->
+        <section id="map-view" class="view-section" role="tabpanel" aria-labelledby="map-tab">
+            <div id="map"></div>
+            <div class="dashboard-sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">
+                        <h3><i class="fa-solid fa-chart-pie"></i> Tổng quan tình hình</h3>
+                        <span class="live-label">Đang theo dõi</span>
+                    </div>
+                    <p class="sidebar-caption">Phân loại các tín hiệu cứu trợ mới nhất</p>
+                    
+                    <div class="stat-boxes">
+                        <div class="stat-box red">
+                            ĐỎ (KHẨN) <span class="stat-num" id="stat-red">0</span>
+                        </div>
+                        <div class="stat-box yellow">
+                            VÀNG (VẬT TƯ) <span class="stat-num" id="stat-yellow">0</span>
+                        </div>
+                        <div class="stat-box green">
+                            XANH (AN TOÀN) <span class="stat-num" id="stat-green">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feed-heading">Tín hiệu gần đây</div>
+                <div class="sos-feed" id="sos-feed">
+                    <div id="empty-feed">Chưa có dữ liệu sự cố</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- ===== MODAL ĐĂNG NHẬP / ĐĂNG KÝ ===== -->
+    <div class="auth-overlay" id="auth-overlay" hidden onclick="if(event.target===this) closeAuth()">
+        <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+            <aside class="auth-aside">
+                <div>
+                    <div class="logo"><i class="fa-solid fa-microchip"></i> ReliefLink AI</div>
+                    <h2>Không ai bị bỏ lại <span>phía sau.</span></h2>
+                    <p>Tài khoản giúp lực lượng cứu hộ, nhà hảo tâm và Ban Chỉ đạo PCTT phối hợp minh bạch, an toàn và đáng tin cậy.</p>
+                </div>
+                <ul class="auth-points">
+                    <li><i class="fa-solid fa-bolt"></i><div><strong>Gửi SOS không cần đăng nhập</strong>Giao diện 1 chạm cho người dân trong tình huống khẩn cấp.</div></li>
+                    <li><i class="fa-solid fa-user-shield"></i><div><strong>Dữ liệu được bảo vệ</strong>Vị trí và số điện thoại chỉ hiển thị với tài khoản cứu hộ đã xác minh.</div></li>
+                    <li><i class="fa-solid fa-id-card"></i><div><strong>Sẵn sàng liên thông VNeID</strong>Kiến trúc OAuth 2.0 / OpenID Connect, hạn chế tin giả và trục lợi.</div></li>
+                </ul>
+            </aside>
+
+            <div class="auth-main">
+                <button type="button" class="auth-close" onclick="closeAuth()" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+                <div class="auth-switch" role="tablist" aria-label="Đăng nhập hoặc đăng ký">
+                    <button type="button" id="auth-tab-login" role="tab" class="active" aria-selected="true" onclick="switchAuth('login')">Đăng nhập</button>
+                    <button type="button" id="auth-tab-register" role="tab" aria-selected="false" onclick="switchAuth('register')">Đăng ký</button>
+                </div>
+
+                <div class="auth-alert" id="auth-offline" hidden>
+                    <i class="fa-solid fa-wifi-slash" aria-hidden="true"></i>
+                    <div>Bạn đang <strong>Offline</strong>. Đăng nhập/đăng ký cần kết nối mạng, nhưng bạn vẫn có thể gửi SOS - gói tin sẽ tự đồng bộ khi có sóng.</div>
+                </div>
+
+                <!-- ĐĂNG NHẬP -->
+                <form id="login-form" novalidate onsubmit="return handleLogin(event)">
+                    <h3 id="auth-title">Chào mừng trở lại</h3>
+                    <p class="auth-sub">Đăng nhập để theo dõi bản đồ điều phối và quản lý nguồn lực cứu trợ.</p>
+                    <div class="auth-alert error" id="login-error" role="alert" hidden><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></div>
+                    <div class="field">
+                        <label for="login-id">Số điện thoại hoặc Email</label>
+                        <input class="auth-input" id="login-id" type="text" autocomplete="username" placeholder="09xx xxx xxx hoặc email@example.com">
+                        <div class="field-error">Vui lòng nhập số điện thoại hoặc email.</div>
+                    </div>
+                    <div class="field">
+                        <label for="login-pw">Mật khẩu</label>
+                        <div class="pw-wrap">
+                            <input class="auth-input" id="login-pw" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu">
+                            <button type="button" class="pw-toggle" onclick="togglePw('login-pw', this)" aria-label="Hiện mật khẩu"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <div class="field-error">Vui lòng nhập mật khẩu.</div>
+                    </div>
+                    <div class="auth-row">
+                        <label class="check"><input type="checkbox" id="login-remember" checked> Ghi nhớ đăng nhập</label>
+                        <button type="button" class="link-btn" onclick="forgotPw()">Quên mật khẩu?</button>
+                    </div>
+                    <button type="submit" class="btn-auth"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> ĐĂNG NHẬP</button>
+                    <div class="auth-divider">hoặc</div>
+                    <button type="button" class="btn-vneid" onclick="vneidLogin()"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i> Đăng nhập bằng VNeID <span class="soon">Sắp liên thông</span></button>
+                    <div class="auth-guest">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        <div>Đang gặp nguy hiểm? <strong>Không cần đăng nhập.</strong> <button type="button" class="link-btn" onclick="closeAuth()">Gửi SOS ngay</button></div>
+                    </div>
+                </form>
+
+                <!-- ĐĂNG KÝ -->
+                <form id="register-form" novalidate hidden onsubmit="return handleRegister(event)">
+                    <h3>Tạo tài khoản ReliefLink</h3>
+                    <p class="auth-sub">Chọn vai trò phù hợp để chúng tôi cấp đúng quyền truy cập.</p>
+                    <div class="field">
+                        <label>Bạn tham gia với vai trò</label>
+                        <div class="role-grid" id="role-grid">
+                            <button type="button" class="role-card selected" data-role="citizen" onclick="selectRole('citizen')"><i class="fa-solid fa-house-flood-water"></i><strong>Người dân</strong><span>Cần hỗ trợ hoặc báo tin</span></button>
+                            <button type="button" class="role-card" data-role="rescuer" onclick="selectRole('rescuer')"><i class="fa-solid fa-life-ring"></i><strong>Lực lượng cứu hộ</strong><span>Công an, quân đội, đội xuồng/cano</span></button>
+                            <button type="button" class="role-card" data-role="donor" onclick="selectRole('donor')"><i class="fa-solid fa-hand-holding-heart"></i><strong>Nhà hảo tâm</strong><span>Cá nhân, NGO, doanh nghiệp</span></button>
+                            <button type="button" class="role-card" data-role="admin" onclick="selectRole('admin')"><i class="fa-solid fa-chart-line"></i><strong>Ban Chỉ đạo PCTT</strong><span>Điều hành &amp; phân bổ nguồn lực</span></button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="reg-name">Họ và tên</label>
+                        <input class="auth-input" id="reg-name" type="text" autocomplete="name" placeholder="Nguyễn Văn A">
+                        <div class="field-error">Vui lòng nhập họ và tên.</div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="reg-phone">Số điện thoại</label>
+                            <input class="auth-input" id="reg-phone" type="tel" autocomplete="tel" placeholder="09xx xxx xxx">
+                            <div class="field-error">Số điện thoại chưa hợp lệ.</div>
+                        </div>
+                        <div class="field">
+                            <label for="reg-email">Email <small>(không bắt buộc)</small></label>
+                            <input class="auth-input" id="reg-email" type="email" autocomplete="email" placeholder="email@example.com">
+                            <div class="field-error">Email chưa hợp lệ.</div>
+                        </div>
+                    </div>
+                    <div class="field" id="reg-org-field" hidden>
+                        <label for="reg-org" id="reg-org-label">Đơn vị / Tổ chức</label>
+                        <input class="auth-input" id="reg-org" type="text" placeholder="Tên đơn vị công tác">
+                        <div class="field-error">Vui lòng nhập đơn vị / tổ chức.</div>
+                    </div>
+                    <div class="verify-note" id="reg-verify" hidden>
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <div>Tài khoản này cần được <strong>Ban Chỉ huy PCTT xác minh danh tính</strong> trước khi xem thông tin chi tiết nạn nhân.</div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="reg-pw">Mật khẩu</label>
+                            <div class="pw-wrap">
+                                <input class="auth-input" id="reg-pw" type="password" autocomplete="new-password" placeholder="Tối thiểu 8 ký tự">
+                                <button type="button" class="pw-toggle" onclick="togglePw('reg-pw', this)" aria-label="Hiện mật khẩu"><i class="fa-solid fa-eye"></i></button>
+                            </div>
+                            <div class="field-error">Mật khẩu cần tối thiểu 8 ký tự.</div>
+                        </div>
+                        <div class="field">
+                            <label for="reg-pw2">Nhập lại mật khẩu</label>
+                            <input class="auth-input" id="reg-pw2" type="password" autocomplete="new-password" placeholder="Nhập lại mật khẩu">
+                            <div class="field-error">Mật khẩu nhập lại chưa khớp.</div>
+                        </div>
+                    </div>
+                    <div class="field" id="reg-agree-field">
+                        <label class="check"><input type="checkbox" id="reg-agree"> <span>Tôi đồng ý để ReliefLink AI xử lý vị trí và số điện thoại cho mục đích cứu trợ. Dữ liệu được mã hóa và chỉ chia sẻ cho lực lượng đã xác minh.</span></label>
+                        <div class="field-error">Bạn cần đồng ý để tiếp tục.</div>
+                    </div>
+                    <button type="submit" class="btn-auth"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> TẠO TÀI KHOẢN</button>
+                    <div class="auth-divider">hoặc</div>
+                    <button type="button" class="btn-vneid" onclick="vneidLogin()"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i> Đăng ký nhanh bằng VNeID <span class="soon">Sắp liên thông</span></button>
+                </form>
+
+                <!-- THÀNH CÔNG -->
+                <div class="auth-success" id="auth-success" hidden>
+                    <div class="ok"><i class="fa-solid fa-check"></i></div>
+                    <h3 id="success-title">Thành công</h3>
+                    <p id="success-msg"></p>
+                    <button type="button" class="btn-auth" onclick="closeAuth()">TIẾP TỤC</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Thư viện Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let isOnline = true, map;
+        let counts = { red: 0, yellow: 0, green: 0 };
+        let simLat = 21.0285, simLng = 105.8542; // chỉ dùng làm tâm bản đồ mặc định (Hà Nội), KHÔNG dùng làm vị trí SOS
+
+        function switchTab(viewId, btn) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.setAttribute('aria-selected', 'false'));
+            document.getElementById(viewId).classList.add('active');
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
+
+            // Xử lý nạp bản đồ khi click sang Tab Bản đồ
+            if (viewId === 'map-view') {
+                if (!map) {
+                    initMap();
+                }
+                // HÀM QUAN TRỌNG: Buộc Leaflet tính toán lại kích thước sau khi hiển thị Tab
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 300);
+            }
+        }
+
+        function toggleNetwork() {
+            isOnline = document.getElementById("network-checkbox").checked;
+            const st = document.getElementById("network-status"), icon = document.getElementById("wifi-icon");
+            if (isOnline) {
+                st.innerText = "Đang Online"; st.style.color = "#4CAF50"; icon.className = "fa-solid fa-wifi"; icon.style.color = "#4CAF50";
+            } else {
+                st.innerText = "Offline"; st.style.color = "#e53935"; icon.className = "fa-solid fa-wifi-slash"; icon.style.color = "#e53935";
+            }
+            const w = document.getElementById("auth-offline"); if (w) w.hidden = isOnline;
+            if (isOnline) syncPending();
+        }
+
+        function initMap() {
+            map = L.map('map').setView([simLat, simLng], 10);
+
+            // DÙNG BẢN ĐỒ NỀN TỐI CHUYÊN NGHIỆP CỦA ESRI (100% MIỄN PHÍ, KHÔNG CẦN KEY, KHÔNG LỖI CSS)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+                maxZoom: 16
+            }).addTo(map);
+            sosList.forEach(addMarker);
+            if (sosList.length) map.fitBounds(sosList.map(r => [r.lat, r.lng]), { padding: [60, 60], maxZoom: 12 });
+        }
+
+        // ===== LƯU TRỮ & HIỂN THỊ SOS =====
+        const SOS_KEY = 'relieflink_sos', PENDING_KEY = 'relieflink_pending';
+        const COLORS = { red: '#e53935', yellow: '#FDD835', green: '#4CAF50' };
+        const loadJSON = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } };
+        const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+        let sosList = loadJSON(SOS_KEY), pendingList = loadJSON(PENDING_KEY);
+        const markerById = {};
+
+        function addMarker(rec) {
+            if (!map) return; // bản đồ chưa mở: initMap() sẽ vẽ lại toàn bộ từ sosList
+            const c = COLORS[rec.status];
+            const icon = L.divIcon({ className: 'custom-pin', iconSize: [20, 20],
+                html: `<div style="background-color:${c};width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px ${c};"></div>` });
+            const popup = document.createElement('div'), strong = document.createElement('strong');
+            strong.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone;
+            popup.append(strong, document.createElement('br'), document.createTextNode(rec.desc));
+            if (rec.accuracy != null) {
+                const ac = document.createElement('div');
+                ac.style.cssText = 'margin-top:5px;font-size:11px;color:#667085';
+                ac.textContent = 'Vị trí GPS · sai số ≈ ' + rec.accuracy + ' m';
+                popup.append(ac);
+                L.circle([rec.lat, rec.lng], { radius: rec.accuracy, color: c, weight: 1, fillColor: c, fillOpacity: 0.12, interactive: false }).addTo(map);
+            }
+            if (rec.images && rec.images.length) {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-wrap:wrap';
+                rec.images.forEach(src => { const im = document.createElement('img'); im.src = src; im.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:6px'; row.append(im); });
+                popup.append(row);
+            }
+            markerById[rec.id] = L.marker([rec.lat, rec.lng], { icon }).addTo(map).bindPopup(popup, { maxWidth: 260 });
+        }
+
+        function addFeedItem(rec) {
+            const empty = document.getElementById('empty-feed');
+            if (empty) empty.remove();
+            const c = COLORS[rec.status];
+            const item = document.createElement('div'), ph = document.createElement('strong'), ds = document.createElement('i');
+            item.className = 'feed-item'; item.style.borderLeftColor = c;
+            ph.style.color = c; ph.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone; ds.textContent = rec.desc;
+            item.append(ph, document.createElement('br'), ds);
+            if (rec.accuracy != null || (rec.images && rec.images.length)) {
+                const meta = document.createElement('div');
+                meta.style.cssText = 'margin-top:4px;color:#98a2b0';
+                const parts = [];
+                if (rec.accuracy != null) parts.push('GPS ±' + rec.accuracy + ' m');
+                if (rec.images && rec.images.length) parts.push(rec.images.length + ' ảnh');
+                meta.textContent = '📍 ' + parts.join(' · ');
+                item.append(meta);
+            }
+            document.getElementById('sos-feed').prepend(item);
+        }
+
+        function showSOS(rec) {
+            counts[rec.status]++;
+            document.getElementById('stat-' + rec.status).innerText = counts[rec.status];
+            updateBadge();
+            if (!document.getElementById('noti-panel').hidden) renderNoti();
+            addFeedItem(rec);
+            addMarker(rec);
+        }
+
+        // ===== ĐÁNH GIÁ MỨC ĐỘ NGUY HIỂM (rule-based, mô phỏng AI) =====
+        const LEVELS = {
+            red:    { name: 'NHÃN ĐỎ - KHẨN CẤP TÍNH MẠNG', icon: 'fa-triangle-exclamation', short: 'Đỏ - Khẩn cấp', desc: 'Nguy hiểm đến tính mạng: ngập sâu, mắc kẹt, sạt lở, có người bị thương hoặc nhóm dễ tổn thương. Được ưu tiên điều lực lượng cứu hộ ngay.' },
+            yellow: { name: 'NHÃN VÀNG - CẦN NHU YẾU PHẨM', icon: 'fa-box-open', short: 'Vàng - Cần vật tư', desc: 'Tạm an toàn về vị trí nhưng thiếu lương thực, nước sạch, thuốc men hoặc bị chia cắt. Cần tiếp tế sớm.' },
+            green:  { name: 'NHÃN XANH - AN TOÀN / ĐÃ ỨNG CỨU', icon: 'fa-shield-heart', short: 'Xanh - An toàn', desc: 'Đã có lực lượng tiếp cận hoặc đã nhận đủ hỗ trợ. Hệ thống chỉ ghi nhận để theo dõi.' }
+        };
+        const RULES = {
+            red: [
+                ['ngap mai|trut noc|len tan tran|ngap sau|tren mai|mai nha|ngap nuoc', 'Nhắc đến ngập sâu / mắc kẹt trên mái nhà'],
+                ['mac ket|sat lo|sat nui|vui lap|lu ong|lu quet|mat noc|chim ghe|duoi nuoc', 'Có dấu hiệu mắc kẹt, sạt lở, lũ quét hoặc chìm phương tiện'],
+                ['bi thuong|thuong vong|chet|cap cuu|benh nang|chay mau|ngat|bat tinh', 'Có người bị thương hoặc cần cấp cứu'],
+                ['mang thai|chuyen da|so sinh|em be|tre nho|tre em|nguoi gia|ba chau|cu gia|con nho', 'Có nhóm dễ bị tổn thương (trẻ em, người già, thai phụ)'],
+                ['cuu voi|cuu toi|nguy hiem|urgent_|khan cap', 'Có từ ngữ kêu cứu khẩn cấp']
+            ],
+            yellow: [
+                ['het com|het meo|het luong|hungry_|can kiet|thieu luong|luong thuc', 'Thiếu hoặc hết lương thực'],
+                ['het nuoc|khong co nuoc|nuoc sach|nuoc ngot|khat', 'Thiếu nước sạch'],
+                ['mat dien|co lap|chia cat|het thuoc|thieu thuoc|thuoc men', 'Mất điện / bị chia cắt / thiếu thuốc men']
+            ],
+            green: [['da duoc cuu|da co doi|da nhan|da duoc ho tro|an toan|da on', 'Cho biết đã được ứng cứu hoặc đã an toàn']]
+        };
+        const noAccent = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        const hit = (text, pat) => new RegExp('\\b(' + pat + ')\\b').test(text);
+
+        function assessSOS(desc) {
+            const t = noAccent(desc.toLowerCase().replace(/đói/g, 'hungry_').replace(/gấp/g, 'urgent_'));
+            const found = { red: [], yellow: [], green: [] };
+            Object.keys(RULES).forEach(k => RULES[k].forEach(([pat, why]) => { if (hit(t, pat)) found[k].push(why); }));
+            let status, reasons;
+            if (found.red.length) { status = 'red'; reasons = found.red; }
+            else if (found.green.length && !found.yellow.length) { status = 'green'; reasons = found.green; }
+            else if (found.yellow.length) { status = 'yellow'; reasons = found.yellow; }
+            else { status = 'yellow'; reasons = ['Chưa đủ thông tin để xác định mức độ - tạm xếp mức ưu tiên cao để lực lượng liên hệ xác minh']; }
+            return { status, reasons };
+        }
+
+        function toast(msg, isError) {
+            document.querySelectorAll('.toast').forEach(n => n.remove());
+            const el = document.createElement('div');
+            el.className = 'toast' + (isError ? ' error' : '');
+            el.setAttribute('role', 'status'); el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4200);
+        }
+
+        // Đồng bộ các gói tin SOS lưu khi mất mạng
+        function syncPending() {
+            if (!pendingList.length) return;
+            const n = pendingList.length;
+            pendingList.forEach(rec => { sosList.push(rec); showSOS(rec); });
+            pendingList = []; saveJSON(PENDING_KEY, pendingList); saveJSON(SOS_KEY, sosList); updateBadge();
+            toast('Đã có mạng: tự động đồng bộ ' + n + ' gói tin SOS lên hệ thống.');
+        }
+
+        /* ===== AUTH: ĐĂNG NHẬP / ĐĂNG KÝ (demo phía client) ===== */
+        const USERS_KEY = 'relieflink_users', SESSION_KEY = 'relieflink_session';
+        const ROLES = {
+            citizen: { label: 'Người dân', verify: false, orgLabel: '' },
+            rescuer: { label: 'Lực lượng cứu hộ', verify: true, orgLabel: 'Đơn vị / Đội cứu hộ' },
+            donor:   { label: 'Nhà hảo tâm', verify: true, orgLabel: 'Tổ chức / Doanh nghiệp (nếu có)' },
+            admin:   { label: 'Ban Chỉ đạo PCTT', verify: true, orgLabel: 'Cơ quan / Ban Chỉ huy PCTT' }
+        };
+        let authMode = 'login', authRole = 'citizen', lastFocus = null;
+
+        const $ = id => document.getElementById(id);
+        const store = {
+            get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+            set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+            del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+        };
+        const normPhone = s => s.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0');
+        async function hashPw(pw) {
+            try {
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('relieflink:' + pw));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) { return btoa(unescape(encodeURIComponent(pw))); }
+        }
+
+        function openAuth(mode) {
+            lastFocus = document.activeElement;
+            $('auth-overlay').hidden = false;
+            document.body.style.overflow = 'hidden';
+            switchAuth(mode);
+        }
+        function closeAuth() {
+            $('auth-overlay').hidden = true;
+            document.body.style.overflow = '';
+            if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+        function switchAuth(mode) {
+            authMode = mode;
+            const isLogin = mode === 'login';
+            $('login-form').hidden = !isLogin;
+            $('register-form').hidden = isLogin;
+            $('auth-success').hidden = true;
+            document.querySelector('.auth-switch').hidden = false;
+            $('auth-tab-login').classList.toggle('active', isLogin);
+            $('auth-tab-register').classList.toggle('active', !isLogin);
+            $('auth-tab-login').setAttribute('aria-selected', isLogin);
+            $('auth-tab-register').setAttribute('aria-selected', !isLogin);
+            $('auth-offline').hidden = isOnline;
+            document.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
+            $('login-error').hidden = true;
+            setTimeout(() => $(isLogin ? 'login-id' : 'reg-name').focus(), 30);
+        }
+        function togglePw(id, btn) {
+            const inp = $(id), show = inp.type === 'password';
+            inp.type = show ? 'text' : 'password';
+            btn.innerHTML = '<i class="fa-solid ' + (show ? 'fa-eye-slash' : 'fa-eye') + '"></i>';
+            btn.setAttribute('aria-label', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+        }
+        function selectRole(role) {
+            authRole = role;
+            document.querySelectorAll('.role-card').forEach(c => c.classList.toggle('selected', c.dataset.role === role));
+            const r = ROLES[role];
+            $('reg-org-field').hidden = role === 'citizen';
+            $('reg-org-label').textContent = r.orgLabel || 'Đơn vị / Tổ chức';
+            $('reg-org').placeholder = role === 'donor' ? 'Có thể để trống nếu là cá nhân' : 'Nhập tên đơn vị';
+            $('reg-verify').hidden = !r.verify;
+        }
+        function setInvalid(inputId, bad) {
+            const f = $(inputId).closest('.field');
+            f.classList.toggle('invalid', bad);
+            return bad;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const id = $('login-id').value.trim(), pw = $('login-pw').value;
+            let bad = setInvalid('login-id', !id);
+            bad = setInvalid('login-pw', !pw) || bad;
+            const err = $('login-error');
+            err.hidden = true;
+            if (bad) return false;
+            if (!isOnline) { err.hidden = false; err.querySelector('span').textContent = 'Cần kết nối mạng để đăng nhập. Bạn vẫn có thể gửi SOS khi đang offline.'; return false; }
+            const key = id.includes('@') ? id.toLowerCase() : normPhone(id);
+            const user = store.get(USERS_KEY, []).find(u => u.phone === key || (u.email && u.email === key));
+            if (!user || user.pwHash !== await hashPw(pw)) {
+                err.hidden = false;
+                err.querySelector('span').textContent = 'Thông tin đăng nhập không đúng. Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.';
+                return false;
+            }
+            startSession(user, $('login-remember').checked);
+            showSuccess('Đăng nhập thành công', 'Xin chào ' + user.name + '. ' + (user.status === 'pending' ? 'Tài khoản đang chờ xác minh danh tính - bạn có thể xem bản đồ tổng quan trong lúc chờ.' : 'Chúc bạn một ngày làm việc hiệu quả.'));
+            return false;
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = $('reg-name').value.trim(), phone = normPhone($('reg-phone').value.trim());
+            const email = $('reg-email').value.trim().toLowerCase(), org = $('reg-org').value.trim();
+            const pw = $('reg-pw').value, pw2 = $('reg-pw2').value;
+            let bad = false;
+            bad = setInvalid('reg-name', !name) || bad;
+            bad = setInvalid('reg-phone', !/^0\d{9}$/.test(phone)) || bad;
+            bad = setInvalid('reg-email', !!email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || bad;
+            bad = setInvalid('reg-org', (authRole === 'rescuer' || authRole === 'admin') && !org) || bad;
+            bad = setInvalid('reg-pw', pw.length < 8) || bad;
+            bad = setInvalid('reg-pw2', pw !== pw2 || !pw2) || bad;
+            bad = setInvalid('reg-agree', !$('reg-agree').checked) || bad;
+            if (bad) return false;
+            if (!isOnline) { $('auth-offline').hidden = false; return false; }
+            const users = store.get(USERS_KEY, []);
+            if (users.some(u => u.phone === phone || (email && u.email === email))) {
+                $('reg-phone').closest('.field').classList.add('invalid');
+                $('reg-phone').closest('.field').querySelector('.field-error').textContent = 'Số điện thoại hoặc email này đã được đăng ký.';
+                return false;
+            }
+            const user = { name, phone, email, org, role: authRole, status: ROLES[authRole].verify ? 'pending' : 'active', pwHash: await hashPw(pw) };
+            users.push(user);
+            store.set(USERS_KEY, users);
+            startSession(user, true);
+            showSuccess('Đăng ký thành công', ROLES[authRole].verify
+                ? 'Hồ sơ của bạn đã được gửi để Ban Chỉ huy PCTT xác minh. Sau khi được duyệt, bạn sẽ xem được thông tin chi tiết để tiếp cận nạn nhân.'
+                : 'Tài khoản đã sẵn sàng. Bạn vẫn có thể gửi SOS bất cứ lúc nào, kể cả khi mất mạng.');
+            return false;
+        }
+
+        function showSuccess(title, msg) {
+            $('login-form').hidden = true; $('register-form').hidden = true;
+            document.querySelector('.auth-switch').hidden = true;
+            $('auth-offline').hidden = true;
+            $('success-title').textContent = title; $('success-msg').textContent = msg;
+            $('auth-success').hidden = false;
+        }
+        function startSession(user, remember) {
+            const s = { name: user.name, phone: user.phone, role: user.role, status: user.status };
+            if (remember) store.set(SESSION_KEY, s);
+            renderUser(s);
+        }
+        function renderUser(s) {
+            const box = $('nav-actions');
+            box.replaceChildren();
+            if (!s) {
+                const a = document.createElement('button'), b = document.createElement('button');
+                a.className = 'btn btn-signin'; a.textContent = 'Đăng nhập'; a.onclick = () => openAuth('login');
+                b.className = 'btn btn-signup'; b.textContent = 'Đăng ký'; b.onclick = () => openAuth('register');
+                box.append(a, b);
+                return;
+            }
+            const chip = document.createElement('div'), av = document.createElement('div'), meta = document.createElement('div');
+            const nm = document.createElement('b'), rl = document.createElement('span'), out = document.createElement('button');
+            chip.className = 'user-chip'; av.className = 'user-avatar'; meta.className = 'user-meta';
+            av.textContent = (s.name.trim().split(/\s+/).pop() || '?').charAt(0).toUpperCase();
+            nm.textContent = s.name;
+            rl.textContent = ROLES[s.role].label + (s.status === 'pending' ? ' · Chờ xác minh' : '');
+            if (s.status === 'pending') rl.className = 'pending';
+            out.className = 'btn-logout'; out.title = 'Đăng xuất'; out.setAttribute('aria-label', 'Đăng xuất');
+            out.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>'; out.onclick = logout;
+            meta.append(nm, rl); chip.append(av, meta, out); box.append(chip);
+        }
+        function logout() { store.del(SESSION_KEY); renderUser(null); }
+        function forgotPw() {
+            const err = $('login-error');
+            err.hidden = false;
+            err.querySelector('span').textContent = 'Tính năng khôi phục mật khẩu qua SMS OTP sẽ có trong phiên bản tiếp theo.';
+        }
+        function vneidLogin() {
+            const target = authMode === 'login' ? $('login-error') : null;
+            if (target) { target.hidden = false; target.querySelector('span').textContent = 'Đăng nhập VNeID (OAuth 2.0 / OpenID Connect) sẽ khả dụng sau khi được Cục C06 - Bộ Công an cấp phép kết nối.'; }
+            else { switchAuth('login'); $('login-error').hidden = false; $('login-error').querySelector('span').textContent = 'Đăng ký bằng VNeID sẽ khả dụng sau khi được Cục C06 - Bộ Công an cấp phép kết nối.'; }
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('auth-overlay').hidden) closeAuth(); });
+        renderUser(store.get(SESSION_KEY, null));
+
+        // Khôi phục dữ liệu đã lưu khi mở lại trang
+        sosList.forEach(rec => { counts[rec.status]++; addFeedItem(rec); });
+        ['red', 'yellow', 'green'].forEach(k => document.getElementById('stat-' + k).innerText = counts[k]);
+
+        // ===== THÔNG BÁO (CHUÔNG) =====
+        const READ_KEY = 'relieflink_read';
+        let readCount = 0;
+        try { readCount = Math.min(parseInt(localStorage.getItem(READ_KEY)) || 0, sosList.length); } catch (e) { /* trình duyệt chặn lưu trữ */ }
+        const fmtTime = ts => { const d = new Date(ts), z = n => String(n).padStart(2, '0'); return z(d.getHours()) + ':' + z(d.getMinutes()) + ' ' + z(d.getDate()) + '/' + z(d.getMonth() + 1); };
+
+        function updateBadge() {
+            const n = Math.max(0, sosList.length - readCount), b = document.getElementById('noti-count');
+            b.style.display = n ? 'block' : 'none';
+            b.textContent = n > 99 ? '99+' : n;
+        }
+        function renderNoti() {
+            const list = document.getElementById('noti-list');
+            list.replaceChildren();
+            const unread = Math.max(0, sosList.length - readCount);
+            document.getElementById('noti-sub').textContent = unread ? unread + ' chưa đọc' : 'Đã đọc hết';
+            if (pendingList.length) {
+                const it = document.createElement('div'); it.className = 'noti-item unread'; it.style.cursor = 'default';
+                it.innerHTML = '<div class="noti-dot" style="background:#5b7399"><i class="fa-solid fa-cloud-arrow-up"></i></div><div class="noti-body"><div class="noti-title"></div><div class="noti-text" style="white-space:normal"></div></div>';
+                it.querySelector('.noti-title').textContent = 'Đang chờ đồng bộ (' + pendingList.length + ')';
+                it.querySelector('.noti-text').textContent = 'Gói tin đã lưu ngoại tuyến, sẽ tự gửi khi có mạng.';
+                list.append(it);
+            }
+            if (!sosList.length && !pendingList.length) {
+                const e = document.createElement('div'); e.className = 'noti-empty';
+                e.innerHTML = '<i class="fa-regular fa-bell-slash"></i><span>Chưa có thông báo nào</span>';
+                list.append(e); return;
+            }
+            sosList.slice().reverse().slice(0, 30).forEach((rec, i) => {
+                const isNew = (sosList.length - 1 - i) >= readCount;
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'noti-item' + (isNew ? ' unread' : '');
+                btn.onclick = () => openNotiItem(rec.id);
+                const dot = document.createElement('div'); dot.className = 'noti-dot'; dot.style.background = COLORS[rec.status];
+                dot.innerHTML = '<i class="fa-solid ' + LEVELS[rec.status].icon + '"></i>';
+                const body = document.createElement('div'); body.className = 'noti-body';
+                const title = document.createElement('div'); title.className = 'noti-title';
+                const tl = document.createElement('span');
+                if (isNew) { const d = document.createElement('span'); d.className = 'noti-new'; tl.append(d); }
+                tl.append(document.createTextNode('Tín hiệu SOS · ' + LEVELS[rec.status].short));
+                const tm = document.createElement('time'); tm.textContent = fmtTime(rec.id);
+                title.append(tl, tm);
+                const tx = document.createElement('div'); tx.className = 'noti-text'; tx.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone + ' - ' + rec.desc;
+                body.append(title, tx); btn.append(dot, body); list.append(btn);
+            });
+        }
+        function toggleNoti(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) {
+                renderNoti();
+                panel.hidden = false;
+                document.getElementById('noti-btn').setAttribute('aria-expanded', 'true');
+                if (window.innerWidth <= 700) panel.style.top = (document.getElementById('noti-btn').getBoundingClientRect().bottom + 8) + 'px';
+            } else closeNoti();
+        }
+        function closeNoti() {
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) return;
+            panel.hidden = true;
+            document.getElementById('noti-btn').setAttribute('aria-expanded', 'false');
+            readCount = sosList.length;
+            try { localStorage.setItem(READ_KEY, readCount); } catch (e) {}
+            updateBadge();
+        }
+        function openNotiItem(id) {
+            closeNoti();
+            switchTab('map-view', document.getElementById('map-tab'));
+            setTimeout(() => {
+                const m = markerById[id], rec = sosList.find(r => r.id === id);
+                if (m && rec && map) { map.setView([rec.lat, rec.lng], 13); m.openPopup(); }
+            }, 400);
+        }
+        document.addEventListener('click', e => { if (!e.target.closest('.noti-wrap')) closeNoti(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNoti(); });
+        updateBadge();
+
+        /* ===== FORM SOS: 3 BƯỚC BẮT BUỘC → MỞ ẢNH / GIỌNG NÓI ===== */
+        const MAX_ACCURACY_M = 1000;   // sai số lớn hơn mức này (vd: định vị theo IP) thì KHÔNG chấp nhận
+        const GOOD_ACCURACY_M = 30;    // đạt mức này thì chốt vị trí ngay
+        const GEO_REFINE_MS = 15000;   // tối đa thời gian tinh chỉnh sau khi có tín hiệu đầu tiên
+        const GEO_STALE_MS = 5 * 60 * 1000; // vị trí cũ hơn 5 phút phải lấy lại
+        const MAX_PHOTOS = 3;
+        const el = id => document.getElementById(id);
+        const cleanPhone = v => v.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0');
+        const nameOk = () => el('full-name').value.trim().length >= 2;
+        const phoneOk = () => /^0\d{9}$/.test(cleanPhone(el('phone-number').value.trim()));
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        let geo = null, geoWatch = null, geoTimer = null, photos = [];
+
+        function refreshSteps() {
+            const ok = { name: nameOk(), phone: phoneOk(), desc: el('sos-text').value.trim().length > 0, geo: !!geo };
+            [['name', ok.name], ['phone', ok.phone], ['desc', ok.desc], ['geo', ok.geo]].forEach(([k, v]) => {
+                const li = el('step-' + k);
+                li.classList.toggle('done', v);
+                li.querySelector('i').className = v ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+            });
+            const ready = ok.name && ok.phone && ok.desc && ok.geo;
+            el('btn-photo').disabled = !ready;
+            el('btn-voice').disabled = !ready;
+            el('btn-submit').disabled = !ready;
+            el('lock-hint').hidden = ready;
+            if (!ready && listening) stopVoice();
+        }
+        el('full-name').addEventListener('input', () => { if (nameOk()) el('grp-name').classList.remove('invalid'); refreshSteps(); });
+        el('full-name').addEventListener('blur', () => { const v = el('full-name').value.trim(); el('grp-name').classList.toggle('invalid', !!v && !nameOk()); });
+        el('phone-number').addEventListener('input', () => { if (phoneOk()) el('grp-phone').classList.remove('invalid'); refreshSteps(); });
+        el('phone-number').addEventListener('blur', () => { const v = el('phone-number').value.trim(); el('grp-phone').classList.toggle('invalid', !!v && !phoneOk()); });
+        el('sos-text').addEventListener('input', refreshSteps);
+
+        /* ---------- ĐỊNH VỊ THẬT (GPS / Geolocation API) ---------- */
+        function setGeoBtn(state) {
+            const b = el('btn-gps'), ic = b.querySelector('i'), tx = b.querySelector('span');
+            b.classList.toggle('done', state === 'done');
+            b.disabled = state === 'loading';
+            if (state === 'loading') { ic.className = 'fa-solid fa-spinner fa-spin'; tx.textContent = 'Đang lấy vị trí chính xác...'; }
+            else if (state === 'done') { ic.className = 'fa-solid fa-circle-check'; tx.textContent = 'Đã gửi định vị · bấm để cập nhật lại'; }
+            else { ic.className = 'fa-solid fa-location-crosshairs'; tx.textContent = 'Gửi định vị'; }
+        }
+        function showGeoInfo(html, isNode) { const g = el('geo-info'); g.hidden = false; g.replaceChildren(); if (isNode) g.append(html); else g.textContent = html; }
+        function showGeoAlert(title, text) { el('geo-alert-title').textContent = title; el('geo-alert-text').textContent = text; el('geo-alert').hidden = false; }
+        function stopGeoWatch() {
+            if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; }
+            if (geoTimer) { clearTimeout(geoTimer); geoTimer = null; }
+        }
+        function geoErrorMessage(err) {
+            if (err.code === 1) {
+                return isMobile
+                    ? ['Chưa truy cập được vị trí', 'Hãy bật Vị trí (GPS) trên điện thoại: vuốt thanh thông báo xuống và bật "Vị trí", hoặc vào Cài đặt › Vị trí. Sau đó cho phép trình duyệt dùng vị trí khi được hỏi (Cài đặt › Quyền của trình duyệt › Vị trí › Cho phép).']
+                    : ['Bạn đã chặn quyền vị trí', 'Bấm biểu tượng ổ khóa cạnh thanh địa chỉ › Vị trí › Cho phép, rồi bấm Thử lại.'];
+            }
+            if (err.code === 2) {
+                return isMobile
+                    ? ['Vị trí của điện thoại đang tắt hoặc không có tín hiệu', 'Hãy bật Vị trí (GPS) ở thanh thông báo hoặc Cài đặt, ra nơi thoáng rồi bấm Thử lại.']
+                    : ['Không xác định được vị trí', 'Hãy kiểm tra dịch vụ vị trí của hệ điều hành đã bật chưa và máy có kết nối Wi-Fi/mạng, rồi bấm Thử lại.'];
+            }
+            return ['Quá thời gian chờ định vị', 'Chưa nhận được tín hiệu GPS. Hãy ra nơi thoáng, bật Vị trí chế độ độ chính xác cao rồi bấm Thử lại.'];
+        }
+        function getLocation() {
+            el('geo-alert').hidden = true;
+            if (!('geolocation' in navigator)) { showGeoAlert('Thiết bị không hỗ trợ định vị', 'Hãy mở trang bằng Chrome hoặc Safari bản mới.'); return; }
+            if (!window.isSecureContext) { showGeoAlert('Trang chưa chạy ở chế độ bảo mật', 'Trình duyệt chỉ cho phép định vị khi trang chạy trên HTTPS hoặc localhost.'); return; }
+            stopGeoWatch(); geo = null; refreshSteps(); setGeoBtn('loading');
+            el('geo-info').hidden = true;
+            let best = null, finished = false;
+
+            const finish = () => {
+                if (finished) return; finished = true; stopGeoWatch();
+                if (best && best.accuracy <= MAX_ACCURACY_M) {
+                    geo = best; setGeoBtn('done');
+                    const q = best.accuracy <= GOOD_ACCURACY_M ? 'rất chính xác' : best.accuracy <= 100 ? 'chính xác' : 'tương đối';
+                    const box = document.createElement('span');
+                    box.append(document.createTextNode('Vĩ độ '), Object.assign(document.createElement('b'), { textContent: best.lat.toFixed(6) }),
+                        document.createTextNode(' · Kinh độ '), Object.assign(document.createElement('b'), { textContent: best.lng.toFixed(6) }),
+                        document.createTextNode(' · sai số ≈ ' + Math.round(best.accuracy) + ' m (' + q + ')'));
+                    showGeoInfo(box, true);
+                } else {
+                    setGeoBtn('idle'); el('geo-info').hidden = true;
+                    showGeoAlert('Vị trí chưa đủ chính xác', 'Thiết bị chỉ xác định được vị trí với sai số khoảng ' + Math.round(best.accuracy) + ' m. Hãy bật GPS / chế độ độ chính xác cao, ra nơi thoáng rồi bấm Thử lại.');
+                }
+                refreshSteps();
+            };
+
+            geoWatch = navigator.geolocation.watchPosition(pos => {
+                const c = pos.coords;
+                if (!best || c.accuracy < best.accuracy) best = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy, ts: Date.now() };
+                showGeoInfo('Đang tinh chỉnh vị trí... sai số hiện tại ≈ ' + Math.round(best.accuracy) + ' m');
+                if (!geoTimer) geoTimer = setTimeout(finish, GEO_REFINE_MS); // đếm giờ sau khi đã có tín hiệu đầu tiên (không tính lúc chờ người dùng bấm Cho phép)
+                if (best.accuracy <= GOOD_ACCURACY_M) finish();
+            }, err => {
+                if (finished) return;
+                if (best) { finish(); return; }
+                finished = true; stopGeoWatch(); setGeoBtn('idle'); el('geo-info').hidden = true;
+                const [t, m] = geoErrorMessage(err);
+                showGeoAlert(t, m);
+                if (isMobile && err.code !== 3) toast('Vui lòng bật vị trí (GPS) trên điện thoại rồi bấm lại.', true);
+                refreshSteps();
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+        }
+
+        /* ---------- HÌNH ẢNH (nén trước khi lưu) ---------- */
+        function pickPhoto() {
+            if (photos.length >= MAX_PHOTOS) { toast('Tối đa ' + MAX_PHOTOS + ' ảnh cho mỗi yêu cầu.', true); return; }
+            el('photo-input').click();
+        }
+        function compressImage(file, maxSide = 800, quality = 0.65) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file), img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, maxSide / Math.max(img.width, img.height));
+                    const cv = document.createElement('canvas');
+                    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                    URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); };
+                img.src = url;
+            });
+        }
+        el('photo-input').addEventListener('change', async e => {
+            const files = Array.from(e.target.files).slice(0, MAX_PHOTOS - photos.length);
+            for (const f of files) {
+                try { photos.push(await compressImage(f)); } catch (err) { toast('Không đọc được một ảnh, vui lòng chọn ảnh khác.', true); }
+            }
+            e.target.value = ''; renderThumbs();
+        });
+        function renderThumbs() {
+            const box = el('thumbs'); box.replaceChildren();
+            photos.forEach((src, i) => {
+                const t = document.createElement('div'), im = document.createElement('img'), x = document.createElement('button');
+                t.className = 'thumb'; im.src = src; im.alt = 'Ảnh đính kèm ' + (i + 1);
+                x.type = 'button'; x.setAttribute('aria-label', 'Xóa ảnh ' + (i + 1)); x.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                x.onclick = () => { photos.splice(i, 1); renderThumbs(); };
+                t.append(im, x); box.append(t);
+            });
+            el('photo-label').textContent = photos.length ? 'Hình ảnh (' + photos.length + '/' + MAX_PHOTOS + ')' : 'Hình ảnh';
+            el('btn-photo').classList.toggle('active', photos.length > 0);
+        }
+
+        /* ---------- GIỌNG NÓI → CHỮ, GHI NỐI VÀO Ô MÔ TẢ ---------- */
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognizer = null, listening = false;
+        function setVoiceUI(on) {
+            el('btn-voice').classList.toggle('listening', on);
+            el('voice-label').textContent = on ? 'Đang nghe - bấm để dừng' : 'Giọng nói';
+            el('voice-live').hidden = !on;
+        }
+        function toggleVoice() {
+            if (listening) { stopVoice(); return; }
+            if (!SpeechRec) { toast('Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Hãy dùng Chrome hoặc Safari bản mới.', true); return; }
+            listening = true; setVoiceUI(true); startRecognizer();
+        }
+        function startRecognizer() {
+            const ta = el('sos-text');
+            let base = ta.value.trim();
+            const r = new SpeechRec();
+            r.lang = 'vi-VN'; r.continuous = true; r.interimResults = true;
+            r.onresult = e => {
+                let interim = '', fin = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    const t = e.results[i][0].transcript;
+                    if (e.results[i].isFinal) fin += t; else interim += t;
+                }
+                if (fin) base = (base + ' ' + fin.trim()).trim();
+                ta.value = (base + ' ' + interim).trim();
+                refreshSteps();
+            };
+            r.onerror = e => {
+                if (e.error === 'no-speech' || e.error === 'aborted') return;
+                listening = false;
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Chưa được cấp quyền micro. Hãy cho phép micro trong cài đặt trình duyệt.', true);
+                else if (e.error === 'network') toast('Nhận diện giọng nói cần kết nối mạng.', true);
+                else if (e.error === 'audio-capture') toast('Không tìm thấy micro trên thiết bị.', true);
+                else toast('Không nhận diện được giọng nói, vui lòng thử lại.', true);
+            };
+            r.onend = () => {
+                if (listening) { try { startRecognizer(); } catch (err) { listening = false; setVoiceUI(false); } }
+                else setVoiceUI(false);
+            };
+            recognizer = r;
+            try { r.start(); } catch (err) { listening = false; setVoiceUI(false); }
+        }
+        function stopVoice() {
+            listening = false;
+            if (recognizer) { try { recognizer.stop(); } catch (e) {} }
+            setVoiceUI(false);
+        }
+
+        /* ---------- GỬI SOS: dùng đúng tọa độ GPS đã lấy ---------- */
+        function submitSOS() {
+            const desc = el('sos-text').value.trim();
+            if (!nameOk()) { el('grp-name').classList.add('invalid'); el('full-name').focus(); toast('Vui lòng nhập họ và tên.', true); return; }
+            if (!phoneOk()) { el('grp-phone').classList.add('invalid'); el('phone-number').focus(); toast('Vui lòng nhập số điện thoại hợp lệ.', true); return; }
+            if (!desc) { el('sos-text').focus(); toast('Vui lòng mô tả tình trạng.', true); return; }
+            if (!geo) { toast('Vui lòng bấm "Gửi định vị" để gửi vị trí của bạn.', true); return; }
+            if (Date.now() - geo.ts > GEO_STALE_MS) {
+                geo = null; setGeoBtn('idle'); el('geo-info').hidden = true; refreshSteps();
+                toast('Vị trí đã cũ, vui lòng bấm "Gửi định vị" lại để cập nhật.', true); return;
+            }
+            stopVoice();
+            const a = assessSOS(desc);
+            const rec = {
+                id: Date.now(), name: el('full-name').value.trim().replace(/\s+/g, ' '), phone: cleanPhone(el('phone-number').value.trim()), desc, status: a.status,
+                lat: geo.lat, lng: geo.lng, accuracy: Math.round(geo.accuracy), images: photos.slice()
+            };
+            if (isOnline) {
+                sosList.push(rec); saveJSON(SOS_KEY, sosList);
+                showSOS(rec);
+                toast('Đã gửi SOS · AI đánh giá: ' + LEVELS[rec.status].name);
+            } else {
+                pendingList.push(rec); saveJSON(PENDING_KEY, pendingList);
+                toast('Đang offline: đã lưu gói tin (' + LEVELS[rec.status].short + '), sẽ tự đồng bộ khi có mạng.');
+            }
+            el('full-name').value = ''; el('phone-number').value = ''; el('sos-text').value = '';
+            geo = null; photos = []; renderThumbs(); setGeoBtn('idle'); el('geo-info').hidden = true; el('geo-alert').hidden = true;
+            refreshSteps();
+        }
+        refreshSteps();
+    </script>
+</body>
+</html>
