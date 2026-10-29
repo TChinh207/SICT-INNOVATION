@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefLink AI - Nền Tảng AI Kết Nối Nguồn Lực & Cứu Hộ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #202a39;
+            background: #f4f6f9;
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+            --ink: #202a39;
+            --muted: #7b8796;
+            --line: #e8ecf1;
+            --red: #e94c4c;
+            --green: #239b72;
+            --shadow: 0 18px 55px rgba(29, 43, 63, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+        body { min-width: 320px; min-height: 100vh; margin: 0; }
+        button, input, textarea { font: inherit; }
+        button { color: inherit; }
+
+        .navbar {
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            min-height: 76px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 0 clamp(20px, 5vw, 72px);
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.94);
+        }
+        .logo { display: flex; align-items: center; gap: 11px; color: var(--ink); font-size: 18px; font-weight: 750; letter-spacing: -0.045em; white-space: nowrap; }
+        .logo i { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: #fff0ee; color: var(--red); font-size: 17px; }
+        .network-toggle { display: flex; min-height: 38px; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #e7efe9; border-radius: 999px; background: #f7fbf8; color: #52665b; font-size: 12px; }
+        #network-status { color: var(--green); font-size: 12px; font-weight: 650; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 19px; margin-left: 3px; }
+        .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+        .slider { position: absolute; inset: 0; cursor: pointer; border-radius: 99px; background: #cbd2da; transition: background 180ms ease; }
+        .slider::before { position: absolute; top: 3px; left: 3px; width: 13px; height: 13px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; content: ""; transition: transform 180ms ease; }
+        .switch input:checked + .slider { background: #42ad81; }
+        .switch input:checked + .slider::before { transform: translateX(15px); }
+        .switch input:focus-visible + .slider { outline: 3px solid #a8dfc7; outline-offset: 3px; }
+
+        .nav-right, .nav-actions { display: flex; align-items: center; gap: 10px; }
+        .notification-bell { position: relative; display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: white; color: #687486; font-size: 15px; }
+        .notification-bell .badge { position: absolute; top: -5px; right: -5px; min-width: 17px; padding: 2px 4px; border: 2px solid white; border-radius: 99px; background: var(--red); color: white; font-size: 9px; font-weight: 700; text-align: center; }
+        .btn { min-height: 40px; padding: 0 15px; border: 1px solid transparent; border-radius: 10px; font-size: 12px; font-weight: 650; cursor: pointer; transition: transform 160ms ease, background 160ms ease; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-signin { border-color: var(--line); background: white; color: #536071; }
+        .btn-signup { background: var(--ink); color: white; }
+
+        .tabs-container { display: flex; gap: 8px; padding: 14px clamp(20px, 5vw, 72px) 0; border-bottom: 1px solid var(--line); background: white; }
+        .tab-btn { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 9px; padding: 0 19px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #8993a0; font-size: 12px; font-weight: 700; letter-spacing: 0.035em; cursor: pointer; transition: color 160ms ease, border-color 160ms ease; }
+        .tab-btn:hover { color: var(--ink); }
+        .tab-btn.active { border-bottom-color: var(--red); color: var(--red); }
+
+        .viewport { min-height: calc(100vh - 137px); }
+        .view-section { display: none; width: 100%; min-height: calc(100vh - 137px); }
+        .view-section.active { display: flex; }
+
+        #sos-view { align-items: center; justify-content: center; padding: 56px 28px 72px; background: radial-gradient(ellipse at 15% 5%, #fff 0, #f4f6f9 56%); }
+        .sos-layout { display: grid; width: min(1080px, 100%); grid-template-columns: minmax(260px, 0.76fr) minmax(440px, 1fr); align-items: center; gap: clamp(35px, 7vw, 92px); }
+        .sos-intro { padding: 16px 0; }
+        .intro-kicker { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px; color: var(--red); font-size: 10px; font-weight: 750; letter-spacing: 0.14em; text-transform: uppercase; }
+        .intro-kicker::before { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 5px #e94c4c18; content: ""; }
+        .sos-intro h1 { max-width: 440px; margin: 0; color: var(--ink); font-size: clamp(38px, 4.5vw, 58px); font-weight: 720; letter-spacing: -0.065em; line-height: 1.08; }
+        .sos-intro h1 span { color: var(--red); }
+        .intro-copy { max-width: 390px; margin: 20px 0 29px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+        .response-note { display: flex; max-width: 365px; align-items: flex-start; gap: 12px; padding: 15px; border: 1px solid #e8ecf1; border-radius: 14px; background: rgba(255,255,255,.75); color: #647184; font-size: 11px; line-height: 1.6; }
+        .response-note i { margin-top: 2px; color: #e2a632; font-size: 15px; }
+        .response-note strong { display: block; margin-bottom: 2px; color: var(--ink); font-size: 12px; }
+
+        .form-container { width: 100%; padding: clamp(22px, 3.2vw, 34px); border: 1px solid rgba(230, 234, 240, .9); border-radius: 20px; background: white; box-shadow: var(--shadow); }
+        .form-header { margin-bottom: 25px; }
+        .form-header h2 { margin: 0 0 6px; color: var(--ink); font-size: 20px; font-weight: 720; letter-spacing: -0.035em; }
+        .form-header p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        .input-group { margin-bottom: 17px; }
+        .input-group label { display: block; margin-bottom: 8px; color: #475467; font-size: 11px; font-weight: 700; }
+        input[type="tel"], input[type="text"]#full-name, textarea { width: 100%; border: 1px solid #e4e8ee; border-radius: 10px; outline: none; background: #fbfcfd; color: var(--ink); font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        input[type="tel"], input[type="text"]#full-name { height: 43px; padding: 0 13px; }
+        textarea { min-height: 83px; padding: 12px 13px; resize: vertical; line-height: 1.55; }
+        input[type="tel"]::placeholder, input#full-name::placeholder, textarea::placeholder { color: #a4adba; }
+        input[type="tel"]:focus, input#full-name:focus, textarea:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
+        .multimodal-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+        .tool-btn { display: flex; min-height: 62px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px solid #e7ebf0; border-radius: 11px; background: #fbfcfd; color: #738093; font-size: 10px; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
+        .tool-btn i { font-size: 14px; }
+        .tool-btn:hover { border-color: #c9d8f0; background: #f6f9ff; color: #526f9b; }
+        .tool-btn.active { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .btn-submit-sos { display: flex; width: 100%; min-height: 50px; align-items: center; justify-content: center; gap: 10px; margin-top: 21px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #f15b54, #df403f); box-shadow: 0 8px 18px #e94c4c30; color: white; font-size: 12px; font-weight: 800; letter-spacing: .06em; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
+        .btn-submit-sos::before { content: ""; width: 16px; height: 16px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='white' d='M256 0c14.7 0 28.2 8.1 35.2 21l216 400c6.7 12.4 6.4 27.4-.8 39.5S486.1 480 472 480H40c-14.1 0-27.2-7.4-34.4-19.5s-7.5-27.1-.8-39.5l216-400c7-12.9 20.5-21 35.2-21m0 352a32 32 0 1 0 0 64 32 32 0 1 0 0-64m0-192c-18.2 0-32.7 15.5-31.4 33.7l7.4 104c.9 12.5 11.4 22.3 23.9 22.3 12.6 0 23-9.7 23.9-22.3l7.4-104c1.3-18.2-13.1-33.7-31.4-33.7z'/%3E%3C/svg%3E"); }
+        .btn-submit-sos:hover { transform: translateY(-2px); box-shadow: 0 12px 22px #e94c4c42; }
+        .form-footnote { margin: 12px 0 0; color: #99a2af; font-size: 10px; text-align: center; }
+
+        #map-view { min-height: calc(100vh - 137px); gap: 16px; padding: 20px; background: #f4f6f9; }
+        #map { min-width: 0; min-height: 580px; flex: 1; overflow: hidden; border: 1px solid #e5eaf0; border-radius: 16px; background: #e8edf2; box-shadow: 0 8px 26px rgba(29,43,63,.06); z-index: 1; }
+        .dashboard-sidebar { display: flex; width: 350px; flex: 0 0 350px; flex-direction: column; overflow: hidden; border: 1px solid #e8ecf1; border-radius: 16px; background: white; box-shadow: 0 8px 26px rgba(29,43,63,.05); z-index: 2; }
+        .sidebar-header { padding: 21px 19px 18px; border-bottom: 1px solid var(--line); }
+        .sidebar-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .sidebar-title h3 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 720; }
+        .live-label { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+        .live-label::before { width: 6px; height: 6px; border-radius: 50%; background: #36b985; box-shadow: 0 0 0 4px #36b9851c; content: ""; }
+        .sidebar-caption { margin: 6px 0 0; color: #929cab; font-size: 10px; }
+        .stat-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 18px; }
+        .stat-box { min-width: 0; padding: 10px 6px 9px; border: 1px solid; border-radius: 10px; font-size: 8px; font-weight: 750; line-height: 1.35; text-align: center; }
+        .stat-box.red { border-color: #f8ddda; background: #fff6f5; color: #df514b; }
+        .stat-box.yellow { border-color: #f3e7c7; background: #fffbf1; color: #b98a24; }
+        .stat-box.green { border-color: #d9eee4; background: #f4fbf7; color: #278d68; }
+        .stat-num { display: block; margin-top: 5px; color: var(--ink); font-size: 19px; font-weight: 750; }
+        .feed-heading { padding: 17px 19px 2px; color: #8a95a4; font-size: 9px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+        .sos-feed { display: flex; flex: 1; flex-direction: column; gap: 9px; overflow-y: auto; padding: 13px 15px 18px; }
+        .feed-item { padding: 12px 13px; border: 1px solid #edf0f4; border-left: 3px solid; border-radius: 10px; background: #fff; color: #778293; font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
+        .feed-item strong { display: inline-block; margin-bottom: 3px; font-size: 11px; }
+        .feed-item i { color: #7d8795; font-size: 10px; }
+        #empty-feed { display: grid; min-height: 170px; place-content: center; gap: 9px; color: #9aa4b1; font-size: 11px; text-align: center; }
+        #empty-feed::before { color: #c0c9d4; width: 28px; height: 28px; margin: 0 auto; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23c0c9d4' d='M256 512a256 256 0 1 1 0-512 256 256 0 1 1 0 512m0-192a32 32 0 1 0 0 64 32 32 0 1 0 0-64m0-192c-18.2 0-32.7 15.5-31.4 33.7l7.4 104c.9 12.6 11.4 22.3 23.9 22.3 12.6 0 23-9.7 23.9-22.3l7.4-104c1.3-18.2-13.1-33.7-31.4-33.7z'/%3E%3C/svg%3E"); content: ""; }
+        #map-view { height: calc(100vh - 137px); }
+        #map { min-height: 0; height: 100%; }
+        .custom-pin { border-radius: 50%; border: 2px solid white; }
+
+        button:focus-visible { outline: 3px solid #92b8ee; outline-offset: 3px; }
+        @media (max-width: 900px) {
+            .sos-layout { grid-template-columns: minmax(220px, .7fr) minmax(360px, 1fr); gap: 32px; }
+            .dashboard-sidebar { width: 310px; flex-basis: 310px; }
+        }
+        @media (max-width: 700px) {
+            .navbar { min-height: 68px; flex-wrap: wrap; gap: 10px; padding: 12px 18px; }
+            .logo { font-size: 16px; }
+            .logo i { width: 34px; height: 34px; }
+            .network-toggle { order: 3; width: 100%; justify-content: center; }
+            .nav-right { margin-left: auto; }
+            .nav-actions { display: none; }
+            .tabs-container { padding: 10px 14px 0; }
+            .tab-btn { flex: 1; gap: 7px; padding: 0 7px; font-size: 10px; }
+            .viewport, .view-section { min-height: calc(100vh - 151px); }
+            #sos-view { align-items: flex-start; padding: 37px 17px 46px; }
+            .sos-layout { width: 100%; grid-template-columns: 1fr; gap: 24px; }
+            .sos-intro { padding: 0; }
+            .intro-kicker { margin-bottom: 14px; }
+            .sos-intro h1 { max-width: 500px; font-size: clamp(37px, 10vw, 52px); }
+            .intro-copy { margin: 13px 0 17px; font-size: 12px; }
+            .response-note { max-width: none; padding: 12px; }
+            .form-container { padding: 22px 18px; border-radius: 16px; }
+            #map-view { height: auto; min-height: auto; flex-direction: column; padding: 12px; }
+            #map { height: 48vh; min-height: 48vh; flex: none; }
+            .dashboard-sidebar { width: 100%; min-height: 330px; flex: none; }
+            .sos-feed { max-height: 270px; }
+        }
+        @media (max-width: 390px) {
+            .notification-bell { width: 36px; height: 36px; }
+            .multimodal-tools { gap: 6px; }
+            .tool-btn { min-height: 58px; font-size: 9px; }
+            .stat-box { font-size: 7px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+
+        /* ===== AUTH: ĐĂNG NHẬP / ĐĂNG KÝ ===== */
+        [hidden] { display: none !important; }
+        .auth-overlay { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 20px; background: rgba(20, 28, 40, .55); backdrop-filter: blur(3px); overflow-y: auto; }
+        .auth-modal { display: grid; width: min(920px, 100%); max-height: calc(100vh - 40px); grid-template-columns: 0.82fr 1fr; overflow: hidden; border-radius: 22px; background: white; box-shadow: 0 30px 80px rgba(15, 23, 36, .35); animation: authIn 220ms ease; }
+        @keyframes authIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+        .auth-aside { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 34px 30px; background: linear-gradient(160deg, #26324a 0%, #1b2436 100%); color: #e9eef6; }
+        .auth-aside .logo { color: white; }
+        .auth-aside .logo i { background: rgba(233, 76, 76, .18); }
+        .auth-aside h2 { margin: 26px 0 10px; font-size: 25px; font-weight: 720; letter-spacing: -0.045em; line-height: 1.2; }
+        .auth-aside h2 span { color: #ff8b84; }
+        .auth-aside > div > p { margin: 0; color: #a9b6c9; font-size: 12px; line-height: 1.7; }
+        .auth-points { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
+        .auth-points li { display: flex; gap: 11px; color: #cbd5e4; font-size: 11px; line-height: 1.55; }
+        .auth-points i { display: grid; flex: 0 0 28px; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: rgba(255,255,255,.08); color: #ff8b84; font-size: 12px; }
+        .auth-points strong { display: block; color: white; font-size: 12px; }
+        .auth-main { position: relative; max-height: calc(100vh - 40px); overflow-y: auto; padding: 30px clamp(22px, 3.4vw, 38px) 28px; }
+        .auth-close { position: absolute; top: 14px; right: 14px; display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 10px; background: #f2f4f7; color: #6b7686; cursor: pointer; }
+        .auth-close:hover { background: #e8ecf1; color: var(--ink); }
+        .auth-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: calc(100% - 44px); padding: 4px; margin-bottom: 22px; border-radius: 12px; background: #f2f4f7; }
+        .auth-switch button { min-height: 38px; border: 0; border-radius: 9px; background: transparent; color: #7b8796; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 160ms ease, color 160ms ease; }
+        .auth-switch button.active { background: white; box-shadow: 0 1px 4px #1d2b3f1a; color: var(--ink); }
+        .auth-main h3 { margin: 0 0 5px; color: var(--ink); font-size: 20px; font-weight: 720; letter-spacing: -0.035em; }
+        .auth-sub { margin: 0 0 20px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        .auth-alert { display: flex; gap: 10px; padding: 11px 13px; margin-bottom: 16px; border: 1px solid #f6e2b8; border-radius: 11px; background: #fffaf0; color: #8a6414; font-size: 11px; line-height: 1.55; }
+        .auth-alert.error { border-color: #f8ddda; background: #fff6f5; color: #c93a35; }
+        .auth-alert i { margin-top: 2px; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; margin-bottom: 7px; color: #475467; font-size: 11px; font-weight: 700; }
+        .field label small { color: #a0a9b6; font-weight: 500; }
+        .auth-input { width: 100%; height: 43px; padding: 0 13px; border: 1px solid #e4e8ee; border-radius: 10px; outline: none; background: #fbfcfd; color: var(--ink); font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+        .auth-input::placeholder { color: #a4adba; }
+        .auth-input:focus { border-color: #f08b85; background: white; box-shadow: 0 0 0 3px #e94c4c14; }
+        .field.invalid .auth-input { border-color: #ee8a85; background: #fffafa; }
+        .field-error { display: none; margin-top: 6px; color: #d73f3a; font-size: 10px; }
+        .field.invalid .field-error { display: block; }
+        .pw-wrap { position: relative; }
+        .pw-wrap .auth-input { padding-right: 44px; }
+        .pw-toggle { position: absolute; top: 4px; right: 4px; display: grid; width: 35px; height: 35px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #8a95a4; cursor: pointer; }
+        .pw-toggle:hover { color: var(--ink); }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .auth-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 18px; font-size: 11px; }
+        .check { display: flex; align-items: flex-start; gap: 8px; color: #647184; line-height: 1.5; cursor: pointer; }
+        .check input { width: 15px; height: 15px; margin: 1px 0 0; accent-color: var(--red); flex: none; }
+        .link-btn { padding: 0; border: 0; background: none; color: var(--red); font-size: 11px; font-weight: 650; cursor: pointer; }
+        .link-btn:hover { text-decoration: underline; }
+        .btn-auth { display: flex; width: 100%; min-height: 47px; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #f15b54, #df403f); box-shadow: 0 8px 18px #e94c4c30; color: white; font-size: 12px; font-weight: 800; letter-spacing: .04em; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; }
+        .btn-auth:hover { transform: translateY(-1px); box-shadow: 0 12px 22px #e94c4c42; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 17px 0; color: #a0a9b6; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+        .auth-divider::before, .auth-divider::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+        .btn-vneid { display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: center; gap: 10px; border: 1px solid #e0e6ee; border-radius: 11px; background: #fff; color: #3d4b60; font-size: 12px; font-weight: 700; cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+        .btn-vneid:hover { border-color: #c9d6ea; background: #f7f9fc; }
+        .btn-vneid i { color: #c8102e; }
+        .soon { padding: 2px 7px; border-radius: 99px; background: #eef2f7; color: #6b7686; font-size: 9px; font-weight: 700; }
+        .auth-guest { display: flex; gap: 10px; padding: 12px 13px; margin-top: 16px; border: 1px dashed #f1c9c6; border-radius: 12px; background: #fff8f7; color: #7a5a58; font-size: 11px; line-height: 1.55; }
+        .auth-guest i { margin-top: 2px; color: var(--red); }
+        .auth-guest .link-btn { display: inline; }
+        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .role-card { display: flex; flex-direction: column; gap: 4px; padding: 11px 12px; border: 1px solid #e5e9ef; border-radius: 11px; background: white; color: #475467; text-align: left; cursor: pointer; transition: border-color 150ms ease, background 150ms ease; }
+        .role-card i { color: #8a95a4; font-size: 14px; }
+        .role-card strong { color: var(--ink); font-size: 11px; line-height: 1.35; }
+        .role-card span { color: #98a2b0; font-size: 10px; line-height: 1.4; }
+        .role-card:hover { border-color: #f0a6a1; }
+        .role-card.selected { border-color: #f1b4af; background: #fff4f2; }
+        .role-card.selected i { color: var(--red); }
+        .verify-note { display: flex; gap: 9px; padding: 11px 12px; margin: 2px 0 14px; border: 1px solid #d9e6f7; border-radius: 11px; background: #f5f9ff; color: #4d6a92; font-size: 10px; line-height: 1.55; }
+        .verify-note i { margin-top: 2px; }
+        .auth-success { display: grid; place-items: center; gap: 10px; padding: 30px 6px 10px; text-align: center; }
+        .auth-success .ok { display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%; background: #f1fbf6; color: var(--green); font-size: 24px; }
+        .auth-success p { max-width: 320px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+        .auth-success .btn-auth { margin-top: 12px; }
+        .user-chip { display: flex; align-items: center; gap: 9px; padding: 4px 6px 4px 5px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+        .user-avatar { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 9px; background: #fff0ee; color: var(--red); font-size: 12px; font-weight: 750; }
+        .user-meta { display: flex; flex-direction: column; max-width: 150px; line-height: 1.25; }
+        .user-meta b { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+        .user-meta span { color: #8a95a4; font-size: 10px; }
+        .user-meta span.pending { color: #b98a24; }
+        .btn-logout { display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 8px; background: #f2f4f7; color: #6b7686; cursor: pointer; }
+        .btn-logout:hover { background: #fde9e7; color: var(--red); }
+        @media (max-width: 820px) {
+            .auth-modal { grid-template-columns: 1fr; }
+            .auth-aside { display: none; }
+            .auth-main { padding-top: 26px; }
+        }
+        @media (max-width: 700px) {
+            .nav-actions { display: flex; gap: 6px; }
+            .nav-actions .btn { min-height: 36px; padding: 0 11px; }
+            .user-meta { display: none; }
+            .field-row, .role-grid { grid-template-columns: 1fr; }
+            .auth-overlay { align-items: end; padding: 0; }
+            .auth-modal { max-height: 94vh; border-radius: 22px 22px 0 0; }
+            .auth-main { max-height: 94vh; }
+        }
+
+        /* ===== THÔNG BÁO NHANH ===== */
+        .toast { position: fixed; left: 50%; bottom: 26px; z-index: 4000; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; background: #1f2a3b; box-shadow: 0 12px 30px rgba(15,23,36,.3); color: white; font-size: 12px; line-height: 1.5; transform: translateX(-50%); animation: authIn 200ms ease; }
+        .toast.error { background: #c93a35; }
+
+        /* ===== THÔNG BÁO ===== */
+        .noti-wrap { position: relative; }
+        button.notification-bell { padding: 0; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        button.notification-bell:hover, button.notification-bell[aria-expanded="true"] { border-color: #f0c9c6; background: #fff6f5; color: var(--red); }
+        .notification-bell .badge { display: none; }
+        .noti-panel { position: absolute; top: calc(100% + 10px); right: 0; z-index: 1600; width: 370px; max-width: calc(100vw - 24px); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 22px 60px rgba(15,23,36,.2); animation: authIn 180ms ease; }
+        .noti-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 17px 12px; border-bottom: 1px solid var(--line); }
+        .noti-head h4 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 720; }
+        .noti-head span { color: #8a95a4; font-size: 10px; }
+        .noti-list { max-height: min(60vh, 420px); overflow-y: auto; }
+        .noti-item { display: flex; width: 100%; gap: 11px; padding: 13px 17px; border: 0; border-bottom: 1px solid #f1f3f6; background: white; text-align: left; cursor: pointer; }
+        .noti-item:hover { background: #f8fafc; }
+        .noti-item.unread { background: #fff9f8; }
+        .noti-dot { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: white; font-size: 13px; }
+        .noti-body { min-width: 0; flex: 1; }
+        .noti-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink); font-size: 12px; font-weight: 700; }
+        .noti-title time { flex: none; color: #9aa4b1; font-size: 10px; font-weight: 500; }
+        .noti-text { margin-top: 3px; overflow: hidden; color: #697587; font-size: 11px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+        .noti-new { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--red); }
+        .noti-empty { display: grid; gap: 8px; padding: 38px 20px; color: #9aa4b1; font-size: 12px; text-align: center; }
+        .noti-empty i { color: #c4ccd6; font-size: 26px; }
+        @media (max-width: 700px) { .noti-panel { position: fixed; right: 12px; left: 12px; width: auto; max-width: none; } }
+
+        /* ===== FORM SOS: 3 BƯỚC BẮT BUỘC + PHẦN TÙY CHỌN ===== */
+        .req { color: var(--red); }
+        .opt-tag { color: #a0a9b6; font-weight: 500; }
+        .label-note { display: block; margin: -4px 0 8px; color: #a0a9b6; font-size: 10px; font-weight: 500; }
+        .steps { display: flex; gap: 6px; margin: 0 0 20px; padding: 0; list-style: none; }
+        .steps li { display: flex; flex: 1; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px; border: 1px solid #e7ebf0; border-radius: 9px; background: #fbfcfd; color: #98a2b0; font-size: 10px; font-weight: 700; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
+        .steps li.done { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .input-group.invalid input, .input-group.invalid textarea { border-color: #ee8a85; background: #fffafa; }
+        .inline-err { display: none; margin-top: 6px; color: #d73f3a; font-size: 10px; }
+        .input-group.invalid .inline-err { display: block; }
+        .voice-live { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--red); font-size: 10px; }
+        .voice-live::before { width: 7px; height: 7px; border-radius: 50%; background: var(--red); content: ""; animation: rec 1s ease-in-out infinite; }
+        @keyframes rec { 50% { opacity: .25; } }
+
+        .btn-geo { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 9px; border: 1.5px solid #f1b4af; border-radius: 11px; background: #fff6f5; color: #d9443f; font-size: 12px; font-weight: 750; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+        .btn-geo:hover:not(:disabled) { background: #ffeeed; }
+        .btn-geo:disabled { cursor: progress; }
+        .btn-geo.done { border-color: #bde7d5; background: #f1fbf6; color: var(--green); }
+        .geo-info { margin-top: 8px; color: #647184; font-size: 10px; line-height: 1.6; }
+        .geo-info b { color: var(--ink); }
+        .geo-alert { display: flex; gap: 10px; padding: 12px 13px; margin-top: 10px; border: 1px solid #f8ddda; border-radius: 11px; background: #fff6f5; color: #b93631; font-size: 11px; line-height: 1.6; }
+        .geo-alert > i { margin-top: 2px; }
+        .geo-alert strong { display: block; margin-bottom: 2px; }
+        .geo-alert .link-btn { margin-top: 6px; }
+
+        .multimodal-tools.two { grid-template-columns: repeat(2, 1fr); }
+        .tool-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .tool-btn:disabled:hover { border-color: #e7ebf0; background: #fbfcfd; color: #738093; }
+        .tool-btn.listening { border-color: #f1b4af; background: #fff4f2; color: var(--red); }
+        .tool-btn.listening i { animation: rec 1s ease-in-out infinite; }
+        .lock-hint { margin: 9px 0 0; color: #98a2b0; font-size: 10px; line-height: 1.5; }
+        .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .thumb { position: relative; width: 60px; height: 60px; overflow: hidden; border: 1px solid #e4e8ee; border-radius: 9px; }
+        .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .thumb button { position: absolute; top: 3px; right: 3px; display: grid; width: 18px; height: 18px; place-items: center; border: 0; border-radius: 50%; background: rgba(20,28,40,.65); color: white; font-size: 9px; cursor: pointer; }
+        .multimodal-tools.one { grid-template-columns: 1fr; }
+        .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 11px; background: #f2f4f7; }
+        .mode-switch button { display: flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 8px; background: transparent; color: #7b8796; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 160ms ease, color 160ms ease; }
+        .mode-switch button.active { background: white; box-shadow: 0 1px 4px #1d2b3f1a; color: var(--ink); }
+        .mode-switch button.active i { color: var(--red); }
+        .btn-rec { display: flex; width: 100%; min-height: 52px; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; border: 1.5px solid #e7ebf0; border-radius: 11px; background: #fbfcfd; color: #526f9b; font-size: 12px; font-weight: 750; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease; }
+        .btn-rec:hover { border-color: #c9d8f0; background: #f6f9ff; }
+        .btn-rec.listening { border-color: #f1b4af; background: #fff4f2; color: var(--red); }
+        .btn-rec.listening i { animation: rec 1s ease-in-out infinite; }
+        .btn-submit-sos:disabled { opacity: .45; box-shadow: none; transform: none; cursor: not-allowed; }
+
+        /* ===== ICON SVG NỘI TUYẾN (không phụ thuộc Font Awesome / CDN) ===== */
+        i[class*="fa-"] { display: inline-block; width: 1em; height: 1em; font-style: normal; line-height: 1; vertical-align: -0.125em; flex: none; }
+        i[class*="fa-"] svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+        i.fa-spin svg { animation: fa-spin 1s linear infinite; }
+        @keyframes fa-spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo"><i class="fa-solid fa-microchip"></i> ReliefLink AI</div>
+        <div class="network-toggle" title="Chuyển đổi trạng thái kết nối">
+            <i class="fa-solid fa-wifi" id="wifi-icon" style="color: #4CAF50;"></i>
+            <span id="network-status">Đang Online</span>
+            <label class="switch">
+                <input type="checkbox" id="network-checkbox" checked onchange="toggleNetwork()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="nav-right">
+            <div class="noti-wrap">
+                <button type="button" class="notification-bell" id="noti-btn" aria-label="Thông báo" aria-haspopup="true" aria-expanded="false" aria-controls="noti-panel" onclick="toggleNoti(event)">
+                    <i class="fa-solid fa-bell"></i><span class="badge" id="noti-count">0</span>
+                </button>
+                <div class="noti-panel" id="noti-panel" hidden>
+                    <div class="noti-head"><h4>Thông báo</h4><span id="noti-sub"></span></div>
+                    <div class="noti-list" id="noti-list"></div>
+                </div>
+            </div>
+            <div class="nav-actions" id="nav-actions">
+                <button class="btn btn-signin" onclick="openAuth('login')">Đăng nhập</button>
+                <button class="btn btn-signup" onclick="openAuth('register')">Đăng ký</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="tabs-container" role="tablist" aria-label="Chế độ ReliefLink">
+        <button id="sos-tab" class="tab-btn active" role="tab" aria-controls="sos-view" aria-selected="true" onclick="switchTab('sos-view', this)"><i class="fa-solid fa-triangle-exclamation"></i> CỔNG SOS</button>
+        <button id="map-tab" class="tab-btn" role="tab" aria-controls="map-view" aria-selected="false" onclick="switchTab('map-view', this)"><i class="fa-solid fa-map-location-dot"></i> BẢN ĐỒ ĐIỀU PHỐI</button>
+    </div>
+
+    <main class="viewport">
+        <!-- FORM SOS -->
+        <section id="sos-view" class="view-section active" role="tabpanel" aria-labelledby="sos-tab">
+            <div class="sos-layout">
+                <div class="sos-intro">
+                    <p class="intro-kicker">ReliefLink response network</p>
+                    <h1>Nền Tảng AI<br><span>Kết Nối Nguồn Lực & Cứu Hộ</span></h1>
+                    <p class="intro-copy">Gửi tín hiệu khẩn cấp để đội ngũ điều phối nắm bắt tình hình và kết nối nguồn lực hỗ trợ kịp thời.</p>
+                    <div class="response-note">
+                        <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+                        <div><strong>Thông tin của bạn rất quan trọng</strong>Hãy mô tả ngắn gọn vị trí và nhu cầu ưu tiên để việc hỗ trợ được chính xác hơn.</div>
+                    </div>
+                </div>
+                <div class="form-container">
+                <div class="form-header">
+                    <h2>Gửi yêu cầu cứu trợ</h2>
+                    <p>Hệ thống AI sẽ tự động phân tích và điều phối nguồn lực</p>
+                </div>
+                <ol class="steps" id="steps" aria-label="4 thông tin bắt buộc">
+                    <li id="step-name"><i class="fa-regular fa-circle"></i> Họ tên</li>
+                    <li id="step-phone"><i class="fa-regular fa-circle"></i> SĐT</li>
+                    <li id="step-desc"><i class="fa-regular fa-circle"></i> Mô tả</li>
+                    <li id="step-geo"><i class="fa-regular fa-circle"></i> Định vị</li>
+                </ol>
+                <div class="input-group" id="grp-name">
+                    <label for="full-name">Họ và tên <span class="req">*</span></label>
+                    <input type="text" id="full-name" maxlength="80" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="name">
+                    <div class="inline-err">Vui lòng nhập họ và tên (ít nhất 2 ký tự).</div>
+                </div>
+                <div class="input-group" id="grp-phone">
+                    <label for="phone-number">Số điện thoại liên hệ <span class="req">*</span></label>
+                    <input type="tel" id="phone-number" inputmode="tel" maxlength="16" placeholder="Ví dụ: 09xx xxx xxx" autocomplete="tel">
+                    <div class="inline-err">Số điện thoại gồm 10 chữ số, bắt đầu bằng 0 (hoặc +84).</div>
+                </div>
+                <div class="input-group" id="grp-desc">
+                    <label for="sos-text">Mô tả tình trạng <span class="req">*</span></label>
+                    <span class="label-note" style="margin:0 0 6px">1. Nhập mô tả bằng chữ</span>
+                    <textarea id="sos-text" placeholder="Mô tả ngắn gọn tình hình và vị trí hiện tại..."></textarea>
+                    <span class="label-note" style="margin:12px 0 6px">2. Hoặc ghi âm giọng nói (lời nói sẽ tự điền vào ô trên)</span>
+                    <div id="voice-panel">
+                        <button type="button" class="btn-rec" id="btn-voice" onclick="toggleVoice()"><svg class="ic-mic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><svg class="ic-stop" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg><span id="voice-label">Bấm để bắt đầu ghi âm</span></button>
+                        <div class="voice-live" id="voice-live" hidden>Đang nghe - hãy nói tiếng Việt, lời nói sẽ hiện trong ô phía trên</div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Vị trí hiện tại <span class="req">*</span></label>
+                    <span class="label-note">Lấy trực tiếp từ GPS của thiết bị, không dùng tọa độ giả lập</span>
+                    <button type="button" class="btn-geo" id="btn-gps" onclick="getLocation()"><i class="fa-solid fa-location-crosshairs"></i><span>Gửi định vị</span></button>
+                    <div class="geo-info" id="geo-info" hidden></div>
+                    <div class="geo-alert" id="geo-alert" role="alert" hidden>
+                        <i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i>
+                        <div><strong id="geo-alert-title"></strong><span id="geo-alert-text"></span><br><button type="button" class="link-btn" onclick="getLocation()">Thử lại</button></div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Bổ sung hình ảnh <span class="opt-tag">(không bắt buộc)</span></label>
+                    <div class="multimodal-tools one">
+                        <button type="button" class="tool-btn" id="btn-photo" onclick="pickPhoto()"><i class="fa-solid fa-camera"></i><span id="photo-label">Hình ảnh</span></button>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" multiple hidden>
+                    <div class="thumbs" id="thumbs"></div>
+                </div>
+                <button class="btn-submit-sos" id="btn-submit" onclick="submitSOS()" disabled>GỬI TÍN HIỆU KHẨN CẤP</button>
+                <p class="lock-hint" id="submit-hint" style="text-align:center"></p>
+                <p class="form-footnote"><i class="fa-solid fa-lock" aria-hidden="true"></i> Chỉ chia sẻ thông tin cần thiết cho công tác cứu trợ</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAP & DASHBOARD -->
+        <section id="map-view" class="view-section" role="tabpanel" aria-labelledby="map-tab">
+            <div id="map"></div>
+            <div class="dashboard-sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">
+                        <h3><i class="fa-solid fa-chart-pie"></i> Tổng quan tình hình</h3>
+                        <span class="live-label">Đang theo dõi</span>
+                    </div>
+                    <p class="sidebar-caption">Phân loại các tín hiệu cứu trợ mới nhất</p>
+                    
+                    <div class="stat-boxes">
+                        <div class="stat-box red">
+                            ĐỎ (KHẨN) <span class="stat-num" id="stat-red">0</span>
+                        </div>
+                        <div class="stat-box yellow">
+                            VÀNG (VẬT TƯ) <span class="stat-num" id="stat-yellow">0</span>
+                        </div>
+                        <div class="stat-box green">
+                            XANH (AN TOÀN) <span class="stat-num" id="stat-green">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feed-heading">Tín hiệu gần đây</div>
+                <div class="sos-feed" id="sos-feed">
+                    <div id="empty-feed">Chưa có dữ liệu sự cố</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- ===== MODAL ĐĂNG NHẬP / ĐĂNG KÝ ===== -->
+    <div class="auth-overlay" id="auth-overlay" hidden onclick="if(event.target===this) closeAuth()">
+        <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+            <aside class="auth-aside">
+                <div>
+                    <div class="logo"><i class="fa-solid fa-microchip"></i> ReliefLink AI</div>
+                    <h2>Không ai bị bỏ lại <span>phía sau.</span></h2>
+                    <p>Tài khoản giúp lực lượng cứu hộ, nhà hảo tâm và Ban Chỉ đạo PCTT phối hợp minh bạch, an toàn và đáng tin cậy.</p>
+                </div>
+                <ul class="auth-points">
+                    <li><i class="fa-solid fa-bolt"></i><div><strong>Gửi SOS không cần đăng nhập</strong>Giao diện 1 chạm cho người dân trong tình huống khẩn cấp.</div></li>
+                    <li><i class="fa-solid fa-user-shield"></i><div><strong>Dữ liệu được bảo vệ</strong>Vị trí và số điện thoại chỉ hiển thị với tài khoản cứu hộ đã xác minh.</div></li>
+                    <li><i class="fa-solid fa-id-card"></i><div><strong>Sẵn sàng liên thông VNeID</strong>Kiến trúc OAuth 2.0 / OpenID Connect, hạn chế tin giả và trục lợi.</div></li>
+                </ul>
+            </aside>
+
+            <div class="auth-main">
+                <button type="button" class="auth-close" onclick="closeAuth()" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+                <div class="auth-switch" role="tablist" aria-label="Đăng nhập hoặc đăng ký">
+                    <button type="button" id="auth-tab-login" role="tab" class="active" aria-selected="true" onclick="switchAuth('login')">Đăng nhập</button>
+                    <button type="button" id="auth-tab-register" role="tab" aria-selected="false" onclick="switchAuth('register')">Đăng ký</button>
+                </div>
+
+                <div class="auth-alert" id="auth-offline" hidden>
+                    <i class="fa-solid fa-wifi-slash" aria-hidden="true"></i>
+                    <div>Bạn đang <strong>Offline</strong>. Đăng nhập/đăng ký cần kết nối mạng, nhưng bạn vẫn có thể gửi SOS - gói tin sẽ tự đồng bộ khi có sóng.</div>
+                </div>
+
+                <!-- ĐĂNG NHẬP -->
+                <form id="login-form" novalidate onsubmit="return handleLogin(event)">
+                    <h3 id="auth-title">Chào mừng trở lại</h3>
+                    <p class="auth-sub">Đăng nhập để theo dõi bản đồ điều phối và quản lý nguồn lực cứu trợ.</p>
+                    <div class="auth-alert error" id="login-error" role="alert" hidden><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></div>
+                    <div class="field">
+                        <label for="login-id">Số điện thoại hoặc Email</label>
+                        <input class="auth-input" id="login-id" type="text" autocomplete="username" placeholder="09xx xxx xxx hoặc email@example.com">
+                        <div class="field-error">Vui lòng nhập số điện thoại hoặc email.</div>
+                    </div>
+                    <div class="field">
+                        <label for="login-pw">Mật khẩu</label>
+                        <div class="pw-wrap">
+                            <input class="auth-input" id="login-pw" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu">
+                            <button type="button" class="pw-toggle" onclick="togglePw('login-pw', this)" aria-label="Hiện mật khẩu"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <div class="field-error">Vui lòng nhập mật khẩu.</div>
+                    </div>
+                    <div class="auth-row">
+                        <label class="check"><input type="checkbox" id="login-remember" checked> Ghi nhớ đăng nhập</label>
+                        <button type="button" class="link-btn" onclick="forgotPw()">Quên mật khẩu?</button>
+                    </div>
+                    <button type="submit" class="btn-auth"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> ĐĂNG NHẬP</button>
+                    <div class="auth-divider">hoặc</div>
+                    <button type="button" class="btn-vneid" onclick="vneidLogin()"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i> Đăng nhập bằng VNeID <span class="soon">Sắp liên thông</span></button>
+                    <div class="auth-guest">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        <div>Đang gặp nguy hiểm? <strong>Không cần đăng nhập.</strong> <button type="button" class="link-btn" onclick="closeAuth()">Gửi SOS ngay</button></div>
+                    </div>
+                </form>
+
+                <!-- ĐĂNG KÝ -->
+                <form id="register-form" novalidate hidden onsubmit="return handleRegister(event)">
+                    <h3>Tạo tài khoản ReliefLink</h3>
+                    <p class="auth-sub">Chọn vai trò phù hợp để chúng tôi cấp đúng quyền truy cập.</p>
+                    <div class="field">
+                        <label>Bạn tham gia với vai trò</label>
+                        <div class="role-grid" id="role-grid">
+                            <button type="button" class="role-card selected" data-role="citizen" onclick="selectRole('citizen')"><i class="fa-solid fa-house-flood-water"></i><strong>Người dân</strong><span>Cần hỗ trợ hoặc báo tin</span></button>
+                            <button type="button" class="role-card" data-role="rescuer" onclick="selectRole('rescuer')"><i class="fa-solid fa-life-ring"></i><strong>Lực lượng cứu hộ</strong><span>Công an, quân đội, đội xuồng/cano</span></button>
+                            <button type="button" class="role-card" data-role="donor" onclick="selectRole('donor')"><i class="fa-solid fa-hand-holding-heart"></i><strong>Nhà hảo tâm</strong><span>Cá nhân, NGO, doanh nghiệp</span></button>
+                            <button type="button" class="role-card" data-role="admin" onclick="selectRole('admin')"><i class="fa-solid fa-chart-line"></i><strong>Ban Chỉ đạo PCTT</strong><span>Điều hành &amp; phân bổ nguồn lực</span></button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="reg-name">Họ và tên</label>
+                        <input class="auth-input" id="reg-name" type="text" autocomplete="name" placeholder="Nguyễn Văn A">
+                        <div class="field-error">Vui lòng nhập họ và tên.</div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="reg-phone">Số điện thoại</label>
+                            <input class="auth-input" id="reg-phone" type="tel" autocomplete="tel" placeholder="09xx xxx xxx">
+                            <div class="field-error">Số điện thoại chưa hợp lệ.</div>
+                        </div>
+                        <div class="field">
+                            <label for="reg-email">Email <small>(không bắt buộc)</small></label>
+                            <input class="auth-input" id="reg-email" type="email" autocomplete="email" placeholder="email@example.com">
+                            <div class="field-error">Email chưa hợp lệ.</div>
+                        </div>
+                    </div>
+                    <div class="field" id="reg-org-field" hidden>
+                        <label for="reg-org" id="reg-org-label">Đơn vị / Tổ chức</label>
+                        <input class="auth-input" id="reg-org" type="text" placeholder="Tên đơn vị công tác">
+                        <div class="field-error">Vui lòng nhập đơn vị / tổ chức.</div>
+                    </div>
+                    <div class="verify-note" id="reg-verify" hidden>
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <div>Tài khoản này cần được <strong>Ban Chỉ huy PCTT xác minh danh tính</strong> trước khi xem thông tin chi tiết nạn nhân.</div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="reg-pw">Mật khẩu</label>
+                            <div class="pw-wrap">
+                                <input class="auth-input" id="reg-pw" type="password" autocomplete="new-password" placeholder="Tối thiểu 8 ký tự">
+                                <button type="button" class="pw-toggle" onclick="togglePw('reg-pw', this)" aria-label="Hiện mật khẩu"><i class="fa-solid fa-eye"></i></button>
+                            </div>
+                            <div class="field-error">Mật khẩu cần tối thiểu 8 ký tự.</div>
+                        </div>
+                        <div class="field">
+                            <label for="reg-pw2">Nhập lại mật khẩu</label>
+                            <input class="auth-input" id="reg-pw2" type="password" autocomplete="new-password" placeholder="Nhập lại mật khẩu">
+                            <div class="field-error">Mật khẩu nhập lại chưa khớp.</div>
+                        </div>
+                    </div>
+                    <div class="field" id="reg-agree-field">
+                        <label class="check"><input type="checkbox" id="reg-agree"> <span>Tôi đồng ý để ReliefLink AI xử lý vị trí và số điện thoại cho mục đích cứu trợ. Dữ liệu được mã hóa và chỉ chia sẻ cho lực lượng đã xác minh.</span></label>
+                        <div class="field-error">Bạn cần đồng ý để tiếp tục.</div>
+                    </div>
+                    <button type="submit" class="btn-auth"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> TẠO TÀI KHOẢN</button>
+                    <div class="auth-divider">hoặc</div>
+                    <button type="button" class="btn-vneid" onclick="vneidLogin()"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i> Đăng ký nhanh bằng VNeID <span class="soon">Sắp liên thông</span></button>
+                </form>
+
+                <!-- THÀNH CÔNG -->
+                <div class="auth-success" id="auth-success" hidden>
+                    <div class="ok"><i class="fa-solid fa-check"></i></div>
+                    <h3 id="success-title">Thành công</h3>
+                    <p id="success-msg"></p>
+                    <button type="button" class="btn-auth" onclick="closeAuth()">TIẾP TỤC</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        /* Thay <i class="fa-..."> bằng SVG nội tuyến: icon luôn hiện, kể cả khi mất mạng / CDN bị chặn */
+        (function () {
+            const ICONS = {"s:bell":["0 0 448 512","<path d=\"M224 0c-17.7 0-32 14.3-32 32v3.2C119 50 64 114.6 64 192v21.7c0 48.1-16.4 94.8-46.4 132.4l-9.8 12.2C2.7 364.6 0 372.4 0 380.5 0 400.1 15.9 416 35.5 416h376.9c19.6 0 35.5-15.9 35.5-35.5 0-8.1-2.7-15.9-7.8-22.2l-9.8-12.2c-29.9-37.6-46.3-84.3-46.3-132.4V192c0-77.4-55-142-128-156.8V32c0-17.7-14.3-32-32-32m-62 464c7.1 27.6 32.2 48 62 48s54.9-20.4 62-48z\"/>"],"r:bell":["0 0 448 512","<path d=\"M224 0c-13.3 0-24 10.7-24 24v9.7C118.6 45.3 56 115.4 56 200v14.5c0 37.7-10 74.7-29 107.3L5.1 359.2C1.8 365 0 371.5 0 378.2 0 399.1 16.9 416 37.8 416h372.4c20.9 0 37.8-16.9 37.8-37.8 0-6.7-1.8-13.3-5.1-19L421 321.7c-19-32.6-29-69.6-29-107.3v-14.5c0-84.6-62.6-154.7-144-166.3v-9.7c0-13.3-10.7-24-24-24zm168.4 368H55.5l12.9-22.1C91.7 306 104 260.6 104 214.5V200c0-66.3 53.7-120 120-120s120 53.7 120 120v14.5c0 46.2 12.3 91.5 35.5 131.4zm-236.3 96c9.9 28 36.6 48 67.9 48s58-20 67.9-48z\"/>"],"s:bell-slash":["0 0 576 512","<path d=\"M41-24.9c-9.4-9.4-24.6-9.4-33.9 0S-2.3-.3 7 9.1l528 528c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-87.5-87.5c17.2-2.4 30.5-17.3 30.5-35.2 0-8.1-2.7-15.9-7.8-22.2l-9.8-12.2c-29.9-37.6-46.3-84.3-46.3-132.4V192c0-77.4-55-142-128-156.8V32c0-17.7-14.3-32-32-32s-32 14.3-32 32v3.2c-38.6 7.8-72.2 29.6-95.2 59.7zm87 238.5c0 48.1-16.4 94.8-46.4 132.4l-9.8 12.2c-5 6.3-7.8 14.1-7.8 22.2 0 19.6 15.9 35.5 35.5 35.5h235.3L127.9 209v4.5zM288 512c29.8 0 54.9-20.4 62-48H226c7.1 27.6 32.2 48 62 48\"/>"],"r:bell-slash":["0 0 576 512","<path d=\"M41-24.9c-9.4-9.4-24.6-9.4-33.9 0S-2.3-.3 7 9.1l528 528c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-87.8-87.8c17.5-3.3 30.8-18.7 30.8-37.1 0-6.7-1.8-13.3-5.1-19L485 321.7c-19-32.6-29-69.6-29-107.3v-14.5c0-84.6-62.6-154.7-144-166.3v-9.7c0-13.3-10.7-24-24-24s-24 10.7-24 24v9.7c-42.2 6-79.4 27.8-105.4 59.1zm151.8 151.8C214.7 98.4 249.2 80 288 80c66.3 0 120 53.7 120 120v14.5c0 46.2 12.3 91.5 35.5 131.4l12.9 22.1h-22.6L192.7 126.9zm-60.3 219c19.5-33.4 31.3-70.7 34.6-109l-46.7-46.7q-.3 4.95-.3 9.9v14.5c0 37.7-10 74.7-29 107.3l-22 37.3c-3.4 5.8-5.1 12.3-5.1 19 0 20.9 16.9 37.8 37.8 37.8h244.4l-48-48H119.6zM220.1 464c9.9 28 36.6 48 67.9 48s58-20 67.9-48z\"/>"],"s:bolt":["0 0 448 512","<path d=\"M338.8-9.9c11.9 8.6 16.3 24.2 10.9 37.8L271.3 224H416c13.5 0 25.5 8.4 30.1 21.1s.7 26.9-9.6 35.5l-288 240c-11.3 9.4-27.4 9.9-39.3 1.3s-16.3-24.2-10.9-37.8L176.7 288H32c-13.5 0-25.5-8.4-30.1-21.1s-.7-26.9 9.6-35.5l288-240c11.3-9.4 27.4-9.9 39.3-1.3\"/>"],"s:box-open":["0 0 640 512","<path d=\"M560.3 237.2c10.4 11.8 28.3 14.4 41.8 5.5 14.7-9.8 18.7-29.7 8.9-44.4l-48-72c-2.8-4.2-6.6-7.7-11.1-10.2L351.4 4.7C332.1-6 308.6-6 289.2 4.7L88.8 116c-5.4 3-9.7 7.4-12.6 12.8l-48.5 89.9c-12.6 23.4-3.8 52.5 19.6 65.1l33 17.7v53.3c0 23 12.4 44.3 32.4 55.7l176 99.7c19.6 11.1 43.5 11.1 63.1 0l176-99.7c20.1-11.4 32.4-32.6 32.4-55.7V237.3zm-240-9.8L170.2 144l150.1-83.4L470.4 144zm-41.5 50.2-21.3 46.2L91.7 235l25.4-47.2z\"/>"],"s:camera":["0 0 512 512","<path d=\"M149.1 64.8 138.7 96H64c-35.3 0-64 28.7-64 64v256c0 35.3 28.7 64 64 64h384c35.3 0 64-28.7 64-64V160c0-35.3-28.7-64-64-64h-74.7l-10.4-31.2C356.4 45.2 338.1 32 317.4 32H194.6c-20.7 0-39 13.2-45.5 32.8M256 192a96 96 0 1 1 0 192 96 96 0 1 1 0-192\"/>"],"r:camera":["0 0 512 512","<path d=\"M193.1 32c-18.7 0-36.2 9.4-46.6 24.9l-26 39.1H64c-35.3 0-64 28.7-64 64v256c0 35.3 28.7 64 64 64h384c35.3 0 64-28.7 64-64V160c0-35.3-28.7-64-64-64h-56.5l-26-39.1C355.1 41.4 337.6 32 318.9 32zm-6.7 51.6c1.5-2.2 4-3.6 6.7-3.6h125.7c2.7 0 5.2 1.3 6.7 3.6l33.2 49.8c4.5 6.7 11.9 10.7 20 10.7H448c8.8 0 16 7.2 16 16v256c0 8.8-7.2 16-16 16L64 432c-8.8 0-16-7.2-16-16V160c0-8.8 7.2-16 16-16h69.3c8 0 15.5-4 20-10.7l33.2-49.8zM256 384a112 112 0 1 0 0-224 112 112 0 1 0 0 224m-64-112a64 64 0 1 1 128 0 64 64 0 1 1-128 0\"/>"],"s:chart-line":["0 0 512 512","<path d=\"M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64v336c0 44.2 35.8 80 80 80h400c17.7 0 32-14.3 32-32s-14.3-32-32-32H80c-8.8 0-16-7.2-16-16zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7l-57.4-57.3c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l73.4-73.4 57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z\"/>"],"s:chart-pie":["0 0 576 512","<path d=\"M512.4 240h-176c-17.7 0-32-14.3-32-32V32c0-17.7 14.4-32.2 31.9-29.9 107 14.2 191.8 99 206 206 2.3 17.5-12.2 31.9-29.9 31.9M222.6 37.2c18.1-3.8 33.8 11 33.8 29.5V264c0 5.6 2 11 5.5 15.3L394 438.7c11.7 14.1 9.2 35.4-6.9 44.1C353 501.4 313.9 512 272.4 512c-132.5 0-240-107.5-240-240 0-115.5 81.5-211.9 190.2-234.8M477.8 288h64c18.5 0 33.3 15.7 29.5 33.8-10.2 48.4-35 91.4-69.6 124.2-12.3 11.7-31.6 9.2-42.4-3.9l-84.4-101.7c-17.3-20.9-2.4-52.4 24.6-52.4h78.2z\"/>"],"s:check":["0 0 448 512","<path d=\"M434.8 70.1c14.3 10.4 17.5 30.4 7.1 44.7l-256 352c-5.5 7.6-14 12.3-23.4 13.1s-18.5-2.7-25.1-9.3l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l101.5 101.5 234-321.7c10.4-14.3 30.4-17.5 44.7-7.1z\"/>"],"s:circle":["0 0 512 512","<path d=\"M0 256a256 256 0 1 1 512 0 256 256 0 1 1-512 0\"/>"],"r:circle":["0 0 512 512","<path d=\"M464 256a208 208 0 1 0-416 0 208 208 0 1 0 416 0M0 256a256 256 0 1 1 512 0 256 256 0 1 1-512 0\"/>"],"s:circle-check":["0 0 512 512","<path d=\"M256 512a256 256 0 1 1 0-512 256 256 0 1 1 0 512m118-366.3c-10.7-7.8-25.7-5.4-33.5 5.3L221.1 315.2 169 263.1c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l72 72c5 5 11.8 7.5 18.8 7s13.4-4.1 17.5-9.8l135.9-187c7.8-10.7 5.4-25.7-5.3-33.5\"/>"],"r:circle-check":["0 0 512 512","<path d=\"M256 512a256 256 0 1 1 0-512 256 256 0 1 1 0 512m0-464a208 208 0 1 0 0 416 208 208 0 1 0 0-416m70.7 121.9c7.8-10.7 22.8-13.1 33.5-5.3s13.1 22.8 5.3 33.5l-122.1 168c-4.1 5.7-10.5 9.3-17.5 9.8s-13.9-2-18.8-6.9l-55.9-55.9c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l36 36L326.7 170z\"/>"],"s:circle-exclamation":["0 0 512 512","<path d=\"M256 512a256 256 0 1 1 0-512 256 256 0 1 1 0 512m0-192a32 32 0 1 0 0 64 32 32 0 1 0 0-64m0-192c-18.2 0-32.7 15.5-31.4 33.7l7.4 104c.9 12.6 11.4 22.3 23.9 22.3 12.6 0 23-9.7 23.9-22.3l7.4-104c1.3-18.2-13.1-33.7-31.4-33.7z\"/>"],"s:circle-info":["0 0 512 512","<path d=\"M256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512m-32-352a32 32 0 1 1 64 0 32 32 0 1 1-64 0m-8 64h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24h-80c-13.3 0-24-10.7-24-24s10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24s10.7-24 24-24\"/>"],"s:cloud-arrow-up":["0 0 576 512","<path d=\"M144 480C64.5 480 0 415.5 0 336c0-63.4 41-117.2 97.9-136.5C96.6 191.8 96 184 96 176c0-79.5 64.5-144 144-144 55.4 0 103.5 31.3 127.6 77.1C381.8 100.8 398.4 96 416 96c53 0 96 43 96 96 0 15.7-3.8 30.6-10.5 43.7C545.5 256 576 300.4 576 352c0 70.7-57.3 128-128 128zm161-289c-9.4-9.4-24.6-9.4-33.9 0l-72 72c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l31-31V368c0 13.3 10.7 24 24 24s24-10.7 24-24V265.9l31 31c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-72-72z\"/>"],"s:eye":["0 0 576 512","<path d=\"M288 32c-80.8 0-145.5 36.8-192.6 80.6-46.8 43.5-78.1 95.4-93 131.1-3.3 7.9-3.3 16.7 0 24.6 14.9 35.7 46.2 87.7 93 131.1C142.5 443.1 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1 3.3-7.9 3.3-16.7 0-24.6-14.9-35.7-46.2-87.7-93-131.1C433.5 68.9 368.8 32 288 32M144 256a144 144 0 1 1 288 0 144 144 0 1 1-288 0m144-64c0 35.3-28.7 64-64 64-11.5 0-22.3-3-31.7-8.4-1 10.9-.1 22.1 2.9 33.2 13.7 51.2 66.4 81.6 117.6 67.9s81.6-66.4 67.9-117.6c-12.2-45.7-55.5-74.8-101.1-70.8 5.3 9.3 8.4 20.1 8.4 31.7\"/>"],"r:eye":["0 0 576 512","<path d=\"M288 80c-65.2 0-118.8 29.6-159.9 67.7C89.6 183.5 63 226 49.4 256c13.6 30 40.2 72.5 78.7 108.3C169.2 402.4 222.8 432 288 432s118.8-29.6 159.9-67.7C486.4 328.5 513 286 526.6 256c-13.6-30-40.2-72.5-78.7-108.3C406.8 109.6 353.2 80 288 80M95.4 112.6C142.5 68.8 207.2 32 288 32s145.5 36.8 192.6 80.6c46.8 43.5 78.1 95.4 93 131.1 3.3 7.9 3.3 16.7 0 24.6-14.9 35.7-46.2 87.7-93 131.1C433.5 443.1 368.8 480 288 480s-145.5-36.8-192.6-80.6c-46.8-43.5-78.1-95.4-93-131.1-3.3-7.9-3.3-16.7 0-24.6 14.9-35.7 46.2-87.7 93-131.1M288 336c44.2 0 80-35.8 80-80 0-29.6-16.1-55.5-40-69.3-1.4 59.7-49.6 107.9-109.3 109.3 13.8 23.9 39.7 40 69.3 40m-79.6-88.4c2.5.3 5 .4 7.6.4 35.3 0 64-28.7 64-64 0-2.6-.2-5.1-.4-7.6-37.4 3.9-67.2 33.7-71.1 71.1zm45.6-115c10.8-3 22.2-4.5 33.9-4.5 8.8 0 17.5.9 25.8 2.6.3.1.5.1.8.2 57.9 12.2 101.4 63.7 101.4 125.2 0 70.7-57.3 128-128 128-61.6 0-113-43.5-125.2-101.4-1.8-8.6-2.8-17.5-2.8-26.6 0-11 1.4-21.8 4-32 .2-.7.3-1.3.5-1.9 11.9-43.4 46.1-77.6 89.5-89.5z\"/>"],"s:eye-slash":["0 0 576 512","<path d=\"M41-24.9c-9.4-9.4-24.6-9.4-33.9 0S-2.3-.3 7 9.1l528 528c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-96.4-96.4c2.7-2.4 5.4-4.8 8-7.2 46.8-43.5 78.1-95.4 93-131.1 3.3-7.9 3.3-16.7 0-24.6-14.9-35.7-46.2-87.7-93-131.1-47.1-43.7-111.8-80.6-192.6-80.6-56.8 0-105.6 18.2-146 44.2zm163.5 163.6C228 121.9 256.9 112 288 112c79.5 0 144 64.5 144 144 0 31.1-9.9 59.9-26.7 83.5l-34.7-34.7c12.7-21.4 17-47.7 10.1-73.7-13.7-51.2-66.4-81.6-117.6-67.9-8.6 2.3-16.7 5.7-24 10l-34.7-34.7zm120.8 256.4c-11.9 3.2-24.4 4.9-37.3 4.9-79.5 0-144-64.5-144-144 0-12.9 1.7-25.4 4.9-37.3l-79.5-79.5C36.8 176 14.4 215 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6 14.9 35.7 46.2 87.7 93 131.1 47.1 43.7 111.8 80.6 192.6 80.6 37.3 0 71.2-7.9 101.5-20.6l-64.2-64.2z\"/>"],"r:eye-slash":["0 0 576 512","<path d=\"M41-24.9c-9.4-9.4-24.6-9.4-33.9 0S-2.3-.3 7 9.1l528 528c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-96.4-96.4c2.7-2.4 5.4-4.8 8-7.2 46.8-43.5 78.1-95.4 93-131.1 3.3-7.9 3.3-16.7 0-24.6-14.9-35.7-46.2-87.7-93-131.1-47.1-43.7-111.8-80.6-192.6-80.6-56.8 0-105.6 18.2-146 44.2zm135.9 136C209 92.2 246.1 80 288 80c65.2 0 118.8 29.6 159.9 67.7C486.4 183.4 513 226 526.5 256c-13.6 30-40.2 72.5-78.6 108.3-3.1 2.8-6.2 5.6-9.4 8.4L393.8 328c14-20.5 22.2-45.3 22.2-72 0-70.7-57.3-128-128-128-26.7 0-51.5 8.2-72 22.2zm182 182-108-108c11.1-5.8 23.7-9.1 37.1-9.1 44.2 0 80 35.8 80 80 0 13.4-3.3 26-9.1 37.1M103.4 173.2l-34-34C36.8 176 14.4 215 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6 14.9 35.7 46.2 87.7 93 131.1 47.1 43.7 111.8 80.6 192.6 80.6 37.3 0 71.2-7.9 101.5-20.6L352.2 422c-20 6.4-41.4 10-64.2 10-65.2 0-118.8-29.6-159.9-67.7C89.6 328.6 63 286 49.5 256c10.4-23.1 28.6-53.6 54-82.8z\"/>"],"s:hand-holding-heart":["0 0 576 512","<path d=\"M279.6 31c-14.1-19.5-36.7-31-60.7-31C177.5 0 144 33.5 144 74.9v2.4c0 64.4 82 133.4 122.2 163.3 13 9.7 30.5 9.7 43.5 0 40.2-30 122.2-98.9 122.2-163.3v-2.4C431.9 33.5 398.4 0 357 0c-24 0-46.6 11.5-60.7 31L288 42.7zM109.3 341.5 66.7 384H32c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32h320.5c29 0 57.3-9.3 80.7-26.5l126.6-93.3c17.8-13.1 21.6-38.1 8.5-55.9s-38.1-21.6-55.9-8.5L392.6 416H280c-13.3 0-24-10.7-24-24s10.7-24 24-24h72c17.7 0 32-14.3 32-32s-14.3-32-32-32H199.8c-33.9 0-66.5 13.5-90.5 37.5\"/>"],"s:house-flood-water":["0 0 640 512","<path d=\"M496 208h4.5c15.2 0 27.5-12.3 27.5-27.5 0-7.9-3.4-15.5-9.4-20.7L348 10.5C340.3 3.7 330.3 0 320 0s-20.3 3.7-28 10.5L121.4 159.8c-6 5.2-9.4 12.8-9.4 20.7 0 15.2 12.3 27.5 27.5 27.5h4.5v94.4c20.3-9.4 42.1-14.2 64-14.4 33.1-.2 66.3 10.2 94.4 31.4 22.1 16.6 29.1 16.6 51.2 0 27.5-20.7 59.9-31.2 92.4-31.4 16.9-.1 33.8 2.6 50 8zm-224-8c0-13.3 10.7-24 24-24h48c13.3 0 24 10.7 24 24v48c0 13.3-10.7 24-24 24h-48c-13.3 0-24-10.7-24-24zm202.6 212.1c19 14.4 41.9 28.2 67.2 33.3 26.5 5.4 54.3.8 80.7-19.1 10.6-8 12.7-23 4.7-33.6s-23-12.7-33.6-4.7c-14.9 11.2-28.6 13.1-42.3 10.3-14.9-3-30.9-11.9-47.8-24.6-38.4-29-90.5-29-129 0-24 18.1-40.7 26.3-54.5 26.3s-30.5-8.2-54.5-26.3c-38.4-29-90.5-29-129 0-21.6 16.3-41.3 25.8-58.9 25.7-9.6-.1-19.9-3-31.2-11.5-10.6-8-25.6-5.9-33.6 4.7s-5.8 25.7 4.8 33.7c19.1 14.4 39.4 21 59.8 21.1 33.9.2 64.3-17.4 88.1-35.3 21.3-16.1 49.9-16.1 71.2 0 24.2 18.3 52.3 35.9 83.4 35.9s59.1-17.7 83.4-35.9c21.3-16.1 49.9-16.1 71.2 0zm-71.2 96c21.3-16.1 49.9-16.1 71.2 0 19 14.4 41.9 28.2 67.2 33.3 26.5 5.4 54.3.8 80.7-19.1 10.6-8 12.7-23 4.7-33.6s-23-12.7-33.6-4.7c-14.9 11.2-28.6 13.1-42.3 10.3-14.9-3-30.9-11.9-47.8-24.6-38.4-29-90.5-29-129 0-24 18.1-40.7 26.3-54.5 26.3s-30.5-8.2-54.5-26.3c-38.4-29-90.5-29-129 0-21.6 16.3-41.3 25.8-58.9 25.7-9.6-.1-19.9-3-31.2-11.5-10.6-8-25.6-5.9-33.6 4.7s-5.8 25.7 4.8 33.7c19.1 14.4 39.4 21 59.8 21.1 33.9.2 64.3-17.4 88.1-35.3 21.3-16.1 49.9-16.1 71.2 0 24.2 18.3 52.3 35.9 83.4 35.9s59.1-17.7 83.4-35.9z\"/>"],"s:id-card":["0 0 576 512","<path d=\"M0 96c0-35.3 28.7-64 64-64h448c35.3 0 64 28.7 64 64zm0 48h576v272c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64zm247.3 272c20.2 0 35.3-19.4 22.4-35-14.7-17.7-36.9-29-61.7-29h-64c-24.8 0-47 11.3-61.7 29-12.9 15.6 2.2 35 22.4 35h142.5zM176 312a56 56 0 1 0 0-112 56 56 0 1 0 0 112m184-104c-13.3 0-24 10.7-24 24s10.7 24 24 24h112c13.3 0 24-10.7 24-24s-10.7-24-24-24zm0 96c-13.3 0-24 10.7-24 24s10.7 24 24 24h112c13.3 0 24-10.7 24-24s-10.7-24-24-24z\"/>"],"r:id-card":["0 0 576 512","<path d=\"M48 416V160h480v256c0 8.8-7.2 16-16 16H320c0-44.2-35.8-80-80-80h-64c-44.2 0-80 35.8-80 80H64c-8.8 0-16-7.2-16-16M64 32C28.7 32 0 60.7 0 96v320c0 35.3 28.7 64 64 64h448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64zm144 280a56 56 0 1 0 0-112 56 56 0 1 0 0 112m168-104c-13.3 0-24 10.7-24 24s10.7 24 24 24h80c13.3 0 24-10.7 24-24s-10.7-24-24-24zm0 96c-13.3 0-24 10.7-24 24s10.7 24 24 24h80c13.3 0 24-10.7 24-24s-10.7-24-24-24z\"/>"],"s:id-card-clip":["0 0 576 512","<path d=\"M256-32h64c17.7 0 32 14.3 32 32v64H224V0c0-17.7 14.3-32 32-32M64 32h112v32c0 26.5 21.5 48 48 48h128c26.5 0 48-21.5 48-48V32h112c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96c0-35.3 28.7-64 64-64m112 368c0 8.8 7.2 16 16 16h192c8.8 0 16-7.2 16-16 0-44.2-35.8-80-80-80h-64c-44.2 0-80 35.8-80 80m112-120a56 56 0 1 0 0-112 56 56 0 1 0 0 112\"/>"],"s:life-ring":["0 0 512 512","<path d=\"M367.2 412.5C335.9 434.9 297.5 448 256 448s-79.9-13.1-111.2-35.5l58-58c15.8 8.6 34 13.5 53.3 13.5s37.4-4.9 53.3-13.5l58 58zm90.7.8c33.8-43.4 54-98 54-157.3S491.8 142.1 458 98.7c9-12.5 7.9-30.1-3.4-41.3S425.8 45 413.3 54C369.9 20.2 315.3 0 256 0S142.1 20.2 98.7 54c-12.5-9-30.1-7.9-41.3 3.4S45 86.2 54 98.7C20.2 142.1 0 196.7 0 256s20.2 113.9 54 157.3c-9 12.5-7.9 30.1 3.4 41.3S86.2 467 98.7 458c43.4 33.8 98 54 157.3 54s113.9-20.2 157.3-54c12.5 9 30.1 7.9 41.3-3.4s12.4-28.8 3.4-41.3zm-45.5-46.1-58-58c8.6-15.8 13.5-34 13.5-53.3s-4.9-37.4-13.5-53.3l58-58C434.9 176.1 448 214.5 448 256s-13.1 79.9-35.5 111.2zM367.2 99.5l-58 58c-15.8-8.6-34-13.5-53.3-13.5s-37.4 4.9-53.3 13.5l-58-58C176.1 77.1 214.5 64 256 64s79.9 13.1 111.2 35.5M157.5 309.3l-58 58C77.1 335.9 64 297.5 64 256s13.1-79.9 35.5-111.2l58 58c-8.6 15.8-13.5 34-13.5 53.3s4.9 37.4 13.5 53.3zM208 256a48 48 0 1 1 96 0 48 48 0 1 1-96 0\"/>"],"r:life-ring":["0 0 512 512","<path d=\"M385.1 419.1C349.7 447.2 304.8 464 256 464s-93.7-16.8-129.1-44.9l80.4-80.4c14.3 8.4 31 13.3 48.8 13.3s34.5-4.8 48.8-13.3l80.4 80.4zm68.1.2C489.9 374.9 512 318.1 512 256s-22.1-118.9-58.8-163.3L465 81c9.4-9.4 9.4-24.6 0-33.9s-24.6-9.4-33.9 0l-11.8 11.7C374.9 22.1 318.1 0 256 0S137.1 22.1 92.7 58.8L81 47c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6-.1 34l11.8 11.7C22.1 137.1 0 193.9 0 256s22.1 118.9 58.8 163.3L47 431c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l11.8-11.8C137.1 489.9 193.9 512 256 512s118.9-22.1 163.3-58.8L431 465c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-11.8-11.8zm-34.1-34.1-80.4-80.4c8.4-14.3 13.3-31 13.3-48.8s-4.8-34.5-13.3-48.8l80.4-80.4C447.2 162.3 464 207.2 464 256s-16.8 93.7-44.9 129.1zm-34-292.3-80.4 80.4c-14.3-8.4-31-13.3-48.8-13.3s-34.5 4.8-48.8 13.3l-80.2-80.4C162.3 64.8 207.2 48 256 48s93.7 16.8 129.1 44.9M173.3 304.8l-80.4 80.3C64.8 349.7 48 304.8 48 256s16.8-93.7 44.9-129.1l80.4 80.4c-8.4 14.3-13.3 31-13.3 48.8s4.8 34.5 13.3 48.8zM208 256a48 48 0 1 1 96 0 48 48 0 1 1-96 0\"/>"],"s:location-crosshairs":["0 0 576 512","<path d=\"M288-16c17.7 0 32 14.3 32 32v18.3c98.1 14 175.7 91.6 189.7 189.7H528c17.7 0 32 14.3 32 32s-14.3 32-32 32h-18.3c-14 98.1-91.6 175.7-189.7 189.7V496c0 17.7-14.3 32-32 32s-32-14.3-32-32v-18.3c-98.1-14-175.7-91.6-189.7-189.7H48c-17.7 0-32-14.3-32-32s14.3-32 32-32h18.3c14-98.1 91.6-175.7 189.7-189.7V16c0-17.7 14.3-32 32-32M128 256a160 160 0 1 0 320 0 160 160 0 1 0-320 0m160-96a96 96 0 1 1 0 192 96 96 0 1 1 0-192\"/>"],"s:location-pin-lock":["0 0 512 512","<path d=\"M0 188.6C0 84.4 86 0 192 0c102.1 0 185.6 78.3 191.6 177-62.9 8.1-111.6 61.8-111.6 127v24.4c-19.6 17.6-32 43.1-32 71.5v75.7c-9.9 11.6-18.9 21.7-26.4 29.8-11.8 12.8-31.5 12.8-43.3 0C120.1 450.9-.1 307.9-.1 188.6zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128m240 48.1c0-17.7-14.3-32-32-32s-32 14.3-32 32V352h64zM288 400c0-20.9 13.4-38.7 32-45.3v-50.6c0-44.2 35.8-80 80-80s80 35.8 80 80v50.6c18.6 6.6 32 24.4 32 45.3v96c0 26.5-21.5 48-48 48H336c-26.5 0-48-21.5-48-48z\"/>"],"s:lock":["0 0 384 512","<path d=\"M128 96v64h128V96c0-35.3-28.7-64-64-64s-64 28.7-64 64m-64 64V96c0-70.7 57.3-128 128-128S320 25.3 320 96v64c35.3 0 64 28.7 64 64v224c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V224c0-35.3 28.7-64 64-64\"/>"],"s:map-location-dot":["0 0 640 512","<path d=\"M576 48c0-11.1-5.7-21.4-15.2-27.2s-21.2-6.4-31.1-1.4L413.5 77.5 234.1 17.6c-8.1-2.7-16.8-2.1-24.4 1.7l-128 64C70.8 88.8 64 99.9 64 112v352c0 11.1 5.7 21.4 15.2 27.2s21.2 6.4 31.1 1.4l116.1-58.1 173.3 57.8c-4.3-6.4-8.5-13.1-12.6-19.9-11-18.3-21.9-39.3-30-61.8l-101.2-33.7V92.4l128 42.7v99.3c31-35.8 77-58.4 128-58.4 22.6 0 44.2 4.4 64 12.5zm-64 176c-66.3 0-120 52.8-120 117.9 0 68.9 64.1 150.4 98.6 189.3 11.6 13 31.3 13 42.9 0 34.5-38.9 98.6-120.4 98.6-189.3 0-65.1-53.7-117.9-120-117.9zm-40 120a40 40 0 1 1 80 0 40 40 0 1 1-80 0\"/>"],"s:microchip":["0 0 512 512","<path d=\"M176 24c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c-35.3 0-64 28.7-64 64H24c-13.3 0-24 10.7-24 24s10.7 24 24 24h40v56H24c-13.3 0-24 10.7-24 24s10.7 24 24 24h40v56H24c-13.3 0-24 10.7-24 24s10.7 24 24 24h40c0 35.3 28.7 64 64 64v40c0 13.3 10.7 24 24 24s24-10.7 24-24v-40h56v40c0 13.3 10.7 24 24 24s24-10.7 24-24v-40h56v40c0 13.3 10.7 24 24 24s24-10.7 24-24v-40c35.3 0 64-28.7 64-64h40c13.3 0 24-10.7 24-24s-10.7-24-24-24h-40v-56h40c13.3 0 24-10.7 24-24s-10.7-24-24-24h-40v-56h40c13.3 0 24-10.7 24-24s-10.7-24-24-24h-40c0-35.3-28.7-64-64-64V24c0-13.3-10.7-24-24-24s-24 10.7-24 24v40h-56V24c0-13.3-10.7-24-24-24s-24 10.7-24 24v40h-56zm-16 104h192c17.7 0 32 14.3 32 32v192c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32m16 48v160h160V176z\"/>"],"s:right-from-bracket":["0 0 512 512","<path d=\"M505 273c9.4-9.4 9.4-24.6 0-33.9L361 95c-6.9-6.9-17.2-8.9-26.2-5.2S320 102.3 320 112v80H208c-26.5 0-48 21.5-48 48v32c0 26.5 21.5 48 48 48h112v80c0 9.7 5.8 18.5 14.8 22.2s19.3 1.7 26.2-5.2zM160 96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96C43 32 0 75 0 128v256c0 53 43 96 96 96h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H96c-17.7 0-32-14.3-32-32V128c0-17.7 14.3-32 32-32z\"/>"],"s:right-to-bracket":["0 0 512 512","<path d=\"M345 273c9.4-9.4 9.4-24.6 0-33.9L201 95c-6.9-6.9-17.2-8.9-26.2-5.2S160 102.3 160 112v80H48c-26.5 0-48 21.5-48 48v32c0 26.5 21.5 48 48 48h112v80c0 9.7 5.8 18.5 14.8 22.2s19.3 1.7 26.2-5.2zm7 143c-17.7 0-32 14.3-32 32s14.3 32 32 32h64c53 0 96-43 96-96V128c0-53-43-96-96-96h-64c-17.7 0-32 14.3-32 32s14.3 32 32 32h64c17.7 0 32 14.3 32 32v256c0 17.7-14.3 32-32 32z\"/>"],"s:shield-heart":["0 0 512 512","<path d=\"M269.4 2.9C265.2 1 260.7 0 256 0s-9.2 1-13.4 2.9L54.3 82.8c-22 9.3-38.4 31-38.3 57.2.5 99.2 41.3 280.7 213.6 363.2 16.7 8 36.1 8 52.8 0C454.8 420.7 495.6 239.2 496 140c.1-26.2-16.3-47.9-38.3-57.2zm-19.8 180.6 6.4 8.5 6.4-8.5c11.1-14.8 28.5-23.5 46.9-23.5 32.4 0 58.7 26.3 58.7 58.7v5.3c0 49.1-65.8 98.1-96.5 118.3-9.5 6.2-21.5 6.2-30.9 0-30.7-20.2-96.5-69.3-96.5-118.3v-5.3c0-32.4 26.3-58.7 58.7-58.7 18.5 0 35.9 8.7 46.9 23.5z\"/>"],"s:spinner":["0 0 512 512","<path d=\"M208 48a48 48 0 1 1 96 0 48 48 0 1 1-96 0m0 416a48 48 0 1 1 96 0 48 48 0 1 1-96 0M48 208a48 48 0 1 1 0 96 48 48 0 1 1 0-96m368 48a48 48 0 1 1 96 0 48 48 0 1 1-96 0M75 369.1a48 48 0 1 1 67.9 67.9A48 48 0 1 1 75 369.1M75 75a48 48 0 1 1 67.9 67.9A48 48 0 1 1 75 75m362 294.1a48 48 0 1 1-67.9 67.9 48 48 0 1 1 67.9-67.9\"/>"],"s:triangle-exclamation":["0 0 512 512","<path d=\"M256 0c14.7 0 28.2 8.1 35.2 21l216 400c6.7 12.4 6.4 27.4-.8 39.5S486.1 480 472 480H40c-14.1 0-27.2-7.4-34.4-19.5s-7.5-27.1-.8-39.5l216-400c7-12.9 20.5-21 35.2-21m0 352a32 32 0 1 0 0 64 32 32 0 1 0 0-64m0-192c-18.2 0-32.7 15.5-31.4 33.7l7.4 104c.9 12.5 11.4 22.3 23.9 22.3 12.6 0 23-9.7 23.9-22.3l7.4-104c1.3-18.2-13.1-33.7-31.4-33.7z\"/>"],"s:user-plus":["0 0 640 512","<path d=\"M136 128a120 120 0 1 1 240 0 120 120 0 1 1-240 0M48 482.3C48 383.8 127.8 304 226.3 304h59.4c98.5 0 178.3 79.8 178.3 178.3 0 16.4-13.3 29.7-29.7 29.7H77.7C61.3 512 48 498.7 48 482.3M544 96c13.3 0 24 10.7 24 24v48h48c13.3 0 24 10.7 24 24s-10.7 24-24 24h-48v48c0 13.3-10.7 24-24 24s-24-10.7-24-24v-48h-48c-13.3 0-24-10.7-24-24s10.7-24 24-24h48v-48c0-13.3 10.7-24 24-24\"/>"],"s:user-shield":["0 0 576 512","<path d=\"M224 248a120 120 0 1 0 0-240 120 120 0 1 0 0 240m-29.7 56C95.8 304 16 383.8 16 482.3c0 16.4 13.3 29.7 29.7 29.7h251.5C261 469.4 240 414.5 240 356.4v-31.1c0-7.3 1-14.5 2.9-21.3zm251 184.5-13.3 6.3V306.7l96 32v19.6c0 55.8-32.2 106.5-82.7 130.3zm-23.4-229-112 37.3c-13.1 4.4-21.9 16.6-21.9 30.4v31.1c0 74.4 43 142.1 110.2 173.7l18.5 8.7c4.8 2.2 10 3.4 15.2 3.4s10.5-1.2 15.2-3.4l18.5-8.7C533 500.3 576 432.6 576 358.2v-31.1c0-13.8-8.8-26-21.9-30.4l-112-37.3c-6.6-2.2-13.7-2.2-20.2 0z\"/>"],"s:wifi":["0 0 576 512","<path d=\"M288 96c-90.9 0-173.2 36-233.7 94.6-12.7 12.3-33 12-45.2-.7s-12-33 .7-45.2C81.7 74.9 179.9 32 288 32s206.3 42.9 278.3 112.7c12.7 12.3 13 32.6.7 45.2s-32.6 13-45.2.7C461.2 132 378.9 96 288 96m-48 336a48 48 0 1 1 96 0 48 48 0 1 1-96 0m-72-105.8c-11.7 13.3-31.9 14.5-45.2 2.8s-14.5-31.9-2.8-45.2c41-46.4 101.1-75.8 168-75.8s127 29.4 168 75.8c11.7 13.3 10.4 33.5-2.8 45.2s-33.5 10.4-45.2-2.8c-29.4-33.3-72.2-54.2-120-54.2s-90.6 20.9-120 54.2\"/>"],"wifi-slash":["0 0 576 512","<path d=\"M288 96c-90.9 0-173.2 36-233.7 94.6-12.7 12.3-33 12-45.2-.7s-12-33 .7-45.2C81.7 74.9 179.9 32 288 32s206.3 42.9 278.3 112.7c12.7 12.3 13 32.6.7 45.2s-32.6 13-45.2.7C461.2 132 378.9 96 288 96m-48 336a48 48 0 1 1 96 0 48 48 0 1 1-96 0m-72-105.8c-11.7 13.3-31.9 14.5-45.2 2.8s-14.5-31.9-2.8-45.2c41-46.4 101.1-75.8 168-75.8s127 29.4 168 75.8c11.7 13.3 10.4 33.5-2.8 45.2s-33.5 10.4-45.2-2.8c-29.4-33.3-72.2-54.2-120-54.2s-90.6 20.9-120 54.2\"/><path d=\"M70 40L590 480\" stroke=\"currentColor\" stroke-width=\"56\" stroke-linecap=\"round\" fill=\"none\"/>"],"s:xmark":["0 0 384 512","<path d=\"M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l137.3-137.4 137.4 137.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256l137.3-137.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7z\"/>"]};
+            function render(i) {
+                const cl = i.className;
+                if (i.dataset.fa === cl) return;
+                const m = cl.match(/fa-(?!solid|regular|spin)([a-z0-9-]+)/); if (!m) return;
+                const name = m[1], reg = /\bfa-regular\b/.test(cl);
+                const d = ICONS[name] || (reg && ICONS['r:' + name]) || ICONS['s:' + name] || ICONS[name];
+                const ic = (reg && ICONS['r:' + name]) || ICONS['s:' + name] || ICONS[name];
+                if (!ic) return;
+                i.dataset.fa = cl;
+                i.setAttribute('aria-hidden', 'true');
+                i.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + ic[0] + '">' + ic[1] + '</svg>';
+            }
+            function scan(root) { (root.querySelectorAll ? root.querySelectorAll('i[class*="fa-"]') : []).forEach(render); if (root.matches && root.matches('i[class*="fa-"]')) render(root); }
+            const mo = new MutationObserver(ms => ms.forEach(m => {
+                if (m.type === 'attributes') render(m.target);
+                else m.addedNodes.forEach(n => { if (n.nodeType === 1) scan(n); });
+            }));
+            function start() { scan(document); mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] }); }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+        })();
+    </script>
+    <!-- Thư viện Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let isOnline = true, map;
+        let counts = { red: 0, yellow: 0, green: 0 };
+        let simLat = 21.0285, simLng = 105.8542; // chỉ dùng làm tâm bản đồ mặc định (Hà Nội), KHÔNG dùng làm vị trí SOS
+
+        function switchTab(viewId, btn) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.setAttribute('aria-selected', 'false'));
+            document.getElementById(viewId).classList.add('active');
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
+
+            // Xử lý nạp bản đồ khi click sang Tab Bản đồ
+            if (viewId === 'map-view') {
+                if (!map) {
+                    initMap();
+                }
+                // HÀM QUAN TRỌNG: Buộc Leaflet tính toán lại kích thước sau khi hiển thị Tab
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 300);
+            }
+        }
+
+        function toggleNetwork() {
+            isOnline = document.getElementById("network-checkbox").checked;
+            const st = document.getElementById("network-status"), icon = document.getElementById("wifi-icon");
+            if (isOnline) {
+                st.innerText = "Đang Online"; st.style.color = "#4CAF50"; icon.className = "fa-solid fa-wifi"; icon.style.color = "#4CAF50";
+            } else {
+                st.innerText = "Offline"; st.style.color = "#e53935"; icon.className = "fa-solid fa-wifi-slash"; icon.style.color = "#e53935";
+            }
+            const w = document.getElementById("auth-offline"); if (w) w.hidden = isOnline;
+            if (isOnline) syncPending();
+        }
+
+        function initMap() {
+            map = L.map('map').setView([simLat, simLng], 10);
+
+            // DÙNG BẢN ĐỒ NỀN TỐI CHUYÊN NGHIỆP CỦA ESRI (100% MIỄN PHÍ, KHÔNG CẦN KEY, KHÔNG LỖI CSS)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+                maxZoom: 16
+            }).addTo(map);
+            sosList.forEach(addMarker);
+            if (sosList.length) map.fitBounds(sosList.map(r => [r.lat, r.lng]), { padding: [60, 60], maxZoom: 12 });
+        }
+
+        // ===== LƯU TRỮ & HIỂN THỊ SOS =====
+        const SOS_KEY = 'relieflink_sos', PENDING_KEY = 'relieflink_pending';
+        const COLORS = { red: '#e53935', yellow: '#FDD835', green: '#4CAF50' };
+        const loadJSON = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } };
+        const saveJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+        let sosList = loadJSON(SOS_KEY), pendingList = loadJSON(PENDING_KEY);
+        const markerById = {};
+
+        function addMarker(rec) {
+            if (!map) return; // bản đồ chưa mở: initMap() sẽ vẽ lại toàn bộ từ sosList
+            const c = COLORS[rec.status];
+            const icon = L.divIcon({ className: 'custom-pin', iconSize: [20, 20],
+                html: `<div style="background-color:${c};width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px ${c};"></div>` });
+            const popup = document.createElement('div'), strong = document.createElement('strong');
+            strong.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone;
+            popup.append(strong, document.createElement('br'), document.createTextNode(rec.desc));
+            if (rec.accuracy != null) {
+                const ac = document.createElement('div');
+                ac.style.cssText = 'margin-top:5px;font-size:11px;color:#667085';
+                ac.textContent = 'Vị trí GPS · sai số ≈ ' + rec.accuracy + ' m';
+                popup.append(ac);
+                L.circle([rec.lat, rec.lng], { radius: rec.accuracy, color: c, weight: 1, fillColor: c, fillOpacity: 0.12, interactive: false }).addTo(map);
+            }
+            if (rec.images && rec.images.length) {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-wrap:wrap';
+                rec.images.forEach(src => { const im = document.createElement('img'); im.src = src; im.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:6px'; row.append(im); });
+                popup.append(row);
+            }
+            markerById[rec.id] = L.marker([rec.lat, rec.lng], { icon }).addTo(map).bindPopup(popup, { maxWidth: 260 });
+        }
+
+        function addFeedItem(rec) {
+            const empty = document.getElementById('empty-feed');
+            if (empty) empty.remove();
+            const c = COLORS[rec.status];
+            const item = document.createElement('div'), ph = document.createElement('strong'), ds = document.createElement('i');
+            item.className = 'feed-item'; item.style.borderLeftColor = c;
+            ph.style.color = c; ph.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone; ds.textContent = rec.desc;
+            item.append(ph, document.createElement('br'), ds);
+            if (rec.accuracy != null || (rec.images && rec.images.length)) {
+                const meta = document.createElement('div');
+                meta.style.cssText = 'margin-top:4px;color:#98a2b0';
+                const parts = [];
+                if (rec.accuracy != null) parts.push('GPS ±' + rec.accuracy + ' m');
+                if (rec.images && rec.images.length) parts.push(rec.images.length + ' ảnh');
+                meta.textContent = '📍 ' + parts.join(' · ');
+                item.append(meta);
+            }
+            document.getElementById('sos-feed').prepend(item);
+        }
+
+        function showSOS(rec) {
+            counts[rec.status]++;
+            document.getElementById('stat-' + rec.status).innerText = counts[rec.status];
+            updateBadge();
+            if (!document.getElementById('noti-panel').hidden) renderNoti();
+            addFeedItem(rec);
+            addMarker(rec);
+        }
+
+        // ===== ĐÁNH GIÁ MỨC ĐỘ NGUY HIỂM (rule-based, mô phỏng AI) =====
+        const LEVELS = {
+            red:    { name: 'NHÃN ĐỎ - KHẨN CẤP TÍNH MẠNG', icon: 'fa-triangle-exclamation', short: 'Đỏ - Khẩn cấp', desc: 'Nguy hiểm đến tính mạng: ngập sâu, mắc kẹt, sạt lở, có người bị thương hoặc nhóm dễ tổn thương. Được ưu tiên điều lực lượng cứu hộ ngay.' },
+            yellow: { name: 'NHÃN VÀNG - CẦN NHU YẾU PHẨM', icon: 'fa-box-open', short: 'Vàng - Cần vật tư', desc: 'Tạm an toàn về vị trí nhưng thiếu lương thực, nước sạch, thuốc men hoặc bị chia cắt. Cần tiếp tế sớm.' },
+            green:  { name: 'NHÃN XANH - AN TOÀN / ĐÃ ỨNG CỨU', icon: 'fa-shield-heart', short: 'Xanh - An toàn', desc: 'Đã có lực lượng tiếp cận hoặc đã nhận đủ hỗ trợ. Hệ thống chỉ ghi nhận để theo dõi.' }
+        };
+        const RULES = {
+            red: [
+                ['ngap mai|trut noc|len tan tran|ngap sau|tren mai|mai nha|ngap nuoc', 'Nhắc đến ngập sâu / mắc kẹt trên mái nhà'],
+                ['mac ket|sat lo|sat nui|vui lap|lu ong|lu quet|mat noc|chim ghe|duoi nuoc', 'Có dấu hiệu mắc kẹt, sạt lở, lũ quét hoặc chìm phương tiện'],
+                ['bi thuong|thuong vong|chet|cap cuu|benh nang|chay mau|ngat|bat tinh', 'Có người bị thương hoặc cần cấp cứu'],
+                ['mang thai|chuyen da|so sinh|em be|tre nho|tre em|nguoi gia|ba chau|cu gia|con nho', 'Có nhóm dễ bị tổn thương (trẻ em, người già, thai phụ)'],
+                ['cuu voi|cuu toi|nguy hiem|urgent_|khan cap', 'Có từ ngữ kêu cứu khẩn cấp']
+            ],
+            yellow: [
+                ['het com|het meo|het luong|hungry_|can kiet|thieu luong|luong thuc', 'Thiếu hoặc hết lương thực'],
+                ['het nuoc|khong co nuoc|nuoc sach|nuoc ngot|khat', 'Thiếu nước sạch'],
+                ['mat dien|co lap|chia cat|het thuoc|thieu thuoc|thuoc men', 'Mất điện / bị chia cắt / thiếu thuốc men']
+            ],
+            green: [['da duoc cuu|da co doi|da nhan|da duoc ho tro|an toan|da on', 'Cho biết đã được ứng cứu hoặc đã an toàn']]
+        };
+        const noAccent = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        const hit = (text, pat) => new RegExp('\\b(' + pat + ')\\b').test(text);
+
+        function assessSOS(desc) {
+            const t = noAccent(desc.toLowerCase().replace(/đói/g, 'hungry_').replace(/gấp/g, 'urgent_'));
+            const found = { red: [], yellow: [], green: [] };
+            Object.keys(RULES).forEach(k => RULES[k].forEach(([pat, why]) => { if (hit(t, pat)) found[k].push(why); }));
+            let status, reasons;
+            if (found.red.length) { status = 'red'; reasons = found.red; }
+            else if (found.green.length && !found.yellow.length) { status = 'green'; reasons = found.green; }
+            else if (found.yellow.length) { status = 'yellow'; reasons = found.yellow; }
+            else { status = 'yellow'; reasons = ['Chưa đủ thông tin để xác định mức độ - tạm xếp mức ưu tiên cao để lực lượng liên hệ xác minh']; }
+            return { status, reasons };
+        }
+
+        function toast(msg, isError) {
+            document.querySelectorAll('.toast').forEach(n => n.remove());
+            const el = document.createElement('div');
+            el.className = 'toast' + (isError ? ' error' : '');
+            el.setAttribute('role', 'status'); el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4200);
+        }
+
+        // Đồng bộ các gói tin SOS lưu khi mất mạng
+        function syncPending() {
+            if (!pendingList.length) return;
+            const n = pendingList.length;
+            pendingList.forEach(rec => { sosList.push(rec); showSOS(rec); });
+            pendingList = []; saveJSON(PENDING_KEY, pendingList); saveJSON(SOS_KEY, sosList); updateBadge();
+            toast('Đã có mạng: tự động đồng bộ ' + n + ' gói tin SOS lên hệ thống.');
+        }
+
+        /* ===== AUTH: ĐĂNG NHẬP / ĐĂNG KÝ (demo phía client) ===== */
+        const USERS_KEY = 'relieflink_users', SESSION_KEY = 'relieflink_session';
+        const ROLES = {
+            citizen: { label: 'Người dân', verify: false, orgLabel: '' },
+            rescuer: { label: 'Lực lượng cứu hộ', verify: true, orgLabel: 'Đơn vị / Đội cứu hộ' },
+            donor:   { label: 'Nhà hảo tâm', verify: true, orgLabel: 'Tổ chức / Doanh nghiệp (nếu có)' },
+            admin:   { label: 'Ban Chỉ đạo PCTT', verify: true, orgLabel: 'Cơ quan / Ban Chỉ huy PCTT' }
+        };
+        let authMode = 'login', authRole = 'citizen', lastFocus = null;
+
+        const $ = id => document.getElementById(id);
+        const store = {
+            get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+            set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+            del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+        };
+        const normPhone = s => s.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0');
+        async function hashPw(pw) {
+            try {
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('relieflink:' + pw));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) { return btoa(unescape(encodeURIComponent(pw))); }
+        }
+
+        function openAuth(mode) {
+            lastFocus = document.activeElement;
+            $('auth-overlay').hidden = false;
+            document.body.style.overflow = 'hidden';
+            switchAuth(mode);
+        }
+        function closeAuth() {
+            $('auth-overlay').hidden = true;
+            document.body.style.overflow = '';
+            if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+        function switchAuth(mode) {
+            authMode = mode;
+            const isLogin = mode === 'login';
+            $('login-form').hidden = !isLogin;
+            $('register-form').hidden = isLogin;
+            $('auth-success').hidden = true;
+            document.querySelector('.auth-switch').hidden = false;
+            $('auth-tab-login').classList.toggle('active', isLogin);
+            $('auth-tab-register').classList.toggle('active', !isLogin);
+            $('auth-tab-login').setAttribute('aria-selected', isLogin);
+            $('auth-tab-register').setAttribute('aria-selected', !isLogin);
+            $('auth-offline').hidden = isOnline;
+            document.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
+            $('login-error').hidden = true;
+            setTimeout(() => $(isLogin ? 'login-id' : 'reg-name').focus(), 30);
+        }
+        function togglePw(id, btn) {
+            const inp = $(id), show = inp.type === 'password';
+            inp.type = show ? 'text' : 'password';
+            btn.innerHTML = '<i class="fa-solid ' + (show ? 'fa-eye-slash' : 'fa-eye') + '"></i>';
+            btn.setAttribute('aria-label', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+        }
+        function selectRole(role) {
+            authRole = role;
+            document.querySelectorAll('.role-card').forEach(c => c.classList.toggle('selected', c.dataset.role === role));
+            const r = ROLES[role];
+            $('reg-org-field').hidden = role === 'citizen';
+            $('reg-org-label').textContent = r.orgLabel || 'Đơn vị / Tổ chức';
+            $('reg-org').placeholder = role === 'donor' ? 'Có thể để trống nếu là cá nhân' : 'Nhập tên đơn vị';
+            $('reg-verify').hidden = !r.verify;
+        }
+        function setInvalid(inputId, bad) {
+            const f = $(inputId).closest('.field');
+            f.classList.toggle('invalid', bad);
+            return bad;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const id = $('login-id').value.trim(), pw = $('login-pw').value;
+            let bad = setInvalid('login-id', !id);
+            bad = setInvalid('login-pw', !pw) || bad;
+            const err = $('login-error');
+            err.hidden = true;
+            if (bad) return false;
+            if (!isOnline) { err.hidden = false; err.querySelector('span').textContent = 'Cần kết nối mạng để đăng nhập. Bạn vẫn có thể gửi SOS khi đang offline.'; return false; }
+            const key = id.includes('@') ? id.toLowerCase() : normPhone(id);
+            const user = store.get(USERS_KEY, []).find(u => u.phone === key || (u.email && u.email === key));
+            if (!user || user.pwHash !== await hashPw(pw)) {
+                err.hidden = false;
+                err.querySelector('span').textContent = 'Thông tin đăng nhập không đúng. Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.';
+                return false;
+            }
+            startSession(user, $('login-remember').checked);
+            showSuccess('Đăng nhập thành công', 'Xin chào ' + user.name + '. ' + (user.status === 'pending' ? 'Tài khoản đang chờ xác minh danh tính - bạn có thể xem bản đồ tổng quan trong lúc chờ.' : 'Chúc bạn một ngày làm việc hiệu quả.'));
+            return false;
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = $('reg-name').value.trim(), phone = normPhone($('reg-phone').value.trim());
+            const email = $('reg-email').value.trim().toLowerCase(), org = $('reg-org').value.trim();
+            const pw = $('reg-pw').value, pw2 = $('reg-pw2').value;
+            let bad = false;
+            bad = setInvalid('reg-name', !name) || bad;
+            bad = setInvalid('reg-phone', !/^0\d{9}$/.test(phone)) || bad;
+            bad = setInvalid('reg-email', !!email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || bad;
+            bad = setInvalid('reg-org', (authRole === 'rescuer' || authRole === 'admin') && !org) || bad;
+            bad = setInvalid('reg-pw', pw.length < 8) || bad;
+            bad = setInvalid('reg-pw2', pw !== pw2 || !pw2) || bad;
+            bad = setInvalid('reg-agree', !$('reg-agree').checked) || bad;
+            if (bad) return false;
+            if (!isOnline) { $('auth-offline').hidden = false; return false; }
+            const users = store.get(USERS_KEY, []);
+            if (users.some(u => u.phone === phone || (email && u.email === email))) {
+                $('reg-phone').closest('.field').classList.add('invalid');
+                $('reg-phone').closest('.field').querySelector('.field-error').textContent = 'Số điện thoại hoặc email này đã được đăng ký.';
+                return false;
+            }
+            const user = { name, phone, email, org, role: authRole, status: ROLES[authRole].verify ? 'pending' : 'active', pwHash: await hashPw(pw) };
+            users.push(user);
+            store.set(USERS_KEY, users);
+            startSession(user, true);
+            showSuccess('Đăng ký thành công', ROLES[authRole].verify
+                ? 'Hồ sơ của bạn đã được gửi để Ban Chỉ huy PCTT xác minh. Sau khi được duyệt, bạn sẽ xem được thông tin chi tiết để tiếp cận nạn nhân.'
+                : 'Tài khoản đã sẵn sàng. Bạn vẫn có thể gửi SOS bất cứ lúc nào, kể cả khi mất mạng.');
+            return false;
+        }
+
+        function showSuccess(title, msg) {
+            $('login-form').hidden = true; $('register-form').hidden = true;
+            document.querySelector('.auth-switch').hidden = true;
+            $('auth-offline').hidden = true;
+            $('success-title').textContent = title; $('success-msg').textContent = msg;
+            $('auth-success').hidden = false;
+        }
+        function startSession(user, remember) {
+            const s = { name: user.name, phone: user.phone, role: user.role, status: user.status };
+            if (remember) store.set(SESSION_KEY, s);
+            renderUser(s);
+        }
+        function renderUser(s) {
+            const box = $('nav-actions');
+            box.replaceChildren();
+            if (!s) {
+                const a = document.createElement('button'), b = document.createElement('button');
+                a.className = 'btn btn-signin'; a.textContent = 'Đăng nhập'; a.onclick = () => openAuth('login');
+                b.className = 'btn btn-signup'; b.textContent = 'Đăng ký'; b.onclick = () => openAuth('register');
+                box.append(a, b);
+                return;
+            }
+            const chip = document.createElement('div'), av = document.createElement('div'), meta = document.createElement('div');
+            const nm = document.createElement('b'), rl = document.createElement('span'), out = document.createElement('button');
+            chip.className = 'user-chip'; av.className = 'user-avatar'; meta.className = 'user-meta';
+            av.textContent = (s.name.trim().split(/\s+/).pop() || '?').charAt(0).toUpperCase();
+            nm.textContent = s.name;
+            rl.textContent = ROLES[s.role].label + (s.status === 'pending' ? ' · Chờ xác minh' : '');
+            if (s.status === 'pending') rl.className = 'pending';
+            out.className = 'btn-logout'; out.title = 'Đăng xuất'; out.setAttribute('aria-label', 'Đăng xuất');
+            out.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>'; out.onclick = logout;
+            meta.append(nm, rl); chip.append(av, meta, out); box.append(chip);
+        }
+        function logout() { store.del(SESSION_KEY); renderUser(null); }
+        function forgotPw() {
+            const err = $('login-error');
+            err.hidden = false;
+            err.querySelector('span').textContent = 'Tính năng khôi phục mật khẩu qua SMS OTP sẽ có trong phiên bản tiếp theo.';
+        }
+        function vneidLogin() {
+            const target = authMode === 'login' ? $('login-error') : null;
+            if (target) { target.hidden = false; target.querySelector('span').textContent = 'Đăng nhập VNeID (OAuth 2.0 / OpenID Connect) sẽ khả dụng sau khi được Cục C06 - Bộ Công an cấp phép kết nối.'; }
+            else { switchAuth('login'); $('login-error').hidden = false; $('login-error').querySelector('span').textContent = 'Đăng ký bằng VNeID sẽ khả dụng sau khi được Cục C06 - Bộ Công an cấp phép kết nối.'; }
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('auth-overlay').hidden) closeAuth(); });
+        renderUser(store.get(SESSION_KEY, null));
+
+        // Khôi phục dữ liệu đã lưu khi mở lại trang
+        sosList.forEach(rec => { counts[rec.status]++; addFeedItem(rec); });
+        ['red', 'yellow', 'green'].forEach(k => document.getElementById('stat-' + k).innerText = counts[k]);
+
+        // ===== THÔNG BÁO (CHUÔNG) =====
+        const READ_KEY = 'relieflink_read';
+        let readCount = 0;
+        try { readCount = Math.min(parseInt(localStorage.getItem(READ_KEY)) || 0, sosList.length); } catch (e) { /* trình duyệt chặn lưu trữ */ }
+        const fmtTime = ts => { const d = new Date(ts), z = n => String(n).padStart(2, '0'); return z(d.getHours()) + ':' + z(d.getMinutes()) + ' ' + z(d.getDate()) + '/' + z(d.getMonth() + 1); };
+
+        function updateBadge() {
+            const n = Math.max(0, sosList.length - readCount), b = document.getElementById('noti-count');
+            b.style.display = n ? 'block' : 'none';
+            b.textContent = n > 99 ? '99+' : n;
+        }
+        function renderNoti() {
+            const list = document.getElementById('noti-list');
+            list.replaceChildren();
+            const unread = Math.max(0, sosList.length - readCount);
+            document.getElementById('noti-sub').textContent = unread ? unread + ' chưa đọc' : 'Đã đọc hết';
+            if (pendingList.length) {
+                const it = document.createElement('div'); it.className = 'noti-item unread'; it.style.cursor = 'default';
+                it.innerHTML = '<div class="noti-dot" style="background:#5b7399"><i class="fa-solid fa-cloud-arrow-up"></i></div><div class="noti-body"><div class="noti-title"></div><div class="noti-text" style="white-space:normal"></div></div>';
+                it.querySelector('.noti-title').textContent = 'Đang chờ đồng bộ (' + pendingList.length + ')';
+                it.querySelector('.noti-text').textContent = 'Gói tin đã lưu ngoại tuyến, sẽ tự gửi khi có mạng.';
+                list.append(it);
+            }
+            if (!sosList.length && !pendingList.length) {
+                const e = document.createElement('div'); e.className = 'noti-empty';
+                e.innerHTML = '<i class="fa-regular fa-bell-slash"></i><span>Chưa có thông báo nào</span>';
+                list.append(e); return;
+            }
+            sosList.slice().reverse().slice(0, 30).forEach((rec, i) => {
+                const isNew = (sosList.length - 1 - i) >= readCount;
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'noti-item' + (isNew ? ' unread' : '');
+                btn.onclick = () => openNotiItem(rec.id);
+                const dot = document.createElement('div'); dot.className = 'noti-dot'; dot.style.background = COLORS[rec.status];
+                dot.innerHTML = '<i class="fa-solid ' + LEVELS[rec.status].icon + '"></i>';
+                const body = document.createElement('div'); body.className = 'noti-body';
+                const title = document.createElement('div'); title.className = 'noti-title';
+                const tl = document.createElement('span');
+                if (isNew) { const d = document.createElement('span'); d.className = 'noti-new'; tl.append(d); }
+                tl.append(document.createTextNode('Tín hiệu SOS · ' + LEVELS[rec.status].short));
+                const tm = document.createElement('time'); tm.textContent = fmtTime(rec.id);
+                title.append(tl, tm);
+                const tx = document.createElement('div'); tx.className = 'noti-text'; tx.textContent = (rec.name ? rec.name + ' · ' : '') + rec.phone + ' - ' + rec.desc;
+                body.append(title, tx); btn.append(dot, body); list.append(btn);
+            });
+        }
+        function toggleNoti(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) {
+                renderNoti();
+                panel.hidden = false;
+                document.getElementById('noti-btn').setAttribute('aria-expanded', 'true');
+                if (window.innerWidth <= 700) panel.style.top = (document.getElementById('noti-btn').getBoundingClientRect().bottom + 8) + 'px';
+            } else closeNoti();
+        }
+        function closeNoti() {
+            const panel = document.getElementById('noti-panel');
+            if (panel.hidden) return;
+            panel.hidden = true;
+            document.getElementById('noti-btn').setAttribute('aria-expanded', 'false');
+            readCount = sosList.length;
+            try { localStorage.setItem(READ_KEY, readCount); } catch (e) {}
+            updateBadge();
+        }
+        function openNotiItem(id) {
+            closeNoti();
+            switchTab('map-view', document.getElementById('map-tab'));
+            setTimeout(() => {
+                const m = markerById[id], rec = sosList.find(r => r.id === id);
+                if (m && rec && map) { map.setView([rec.lat, rec.lng], 13); m.openPopup(); }
+            }, 400);
+        }
+        document.addEventListener('click', e => { if (!e.target.closest('.noti-wrap')) closeNoti(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNoti(); });
+        updateBadge();
+
+        /* ===== FORM SOS: 3 BƯỚC BẮT BUỘC → MỞ ẢNH / GIỌNG NÓI ===== */
+        const MAX_ACCURACY_M = 1000;   // sai số lớn hơn mức này (vd: định vị theo IP) thì KHÔNG chấp nhận
+        const GOOD_ACCURACY_M = 30;    // đạt mức này thì chốt vị trí ngay
+        const GEO_REFINE_MS = 15000;   // tối đa thời gian tinh chỉnh sau khi có tín hiệu đầu tiên
+        const GEO_STALE_MS = 5 * 60 * 1000; // vị trí cũ hơn 5 phút phải lấy lại
+        const MAX_PHOTOS = 3;
+        const el = id => document.getElementById(id);
+        const cleanPhone = v => v.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0');
+        const nameOk = () => el('full-name').value.trim().length >= 2;
+        const phoneOk = () => /^0\d{9}$/.test(cleanPhone(el('phone-number').value.trim()));
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        let geo = null, geoWatch = null, geoTimer = null, photos = [];
+
+        function refreshSteps() {
+            const ok = { name: nameOk(), phone: phoneOk(), desc: el('sos-text').value.trim().length > 0, geo: !!geo };
+            [['name', ok.name], ['phone', ok.phone], ['desc', ok.desc], ['geo', ok.geo]].forEach(([k, v]) => {
+                const li = el('step-' + k);
+                li.classList.toggle('done', v);
+                li.querySelector('i').className = v ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+            });
+            const ready = ok.name && ok.phone && ok.desc && ok.geo;
+            el('btn-submit').disabled = !ready;
+            const missing = [];
+            if (!ok.name) missing.push('họ tên');
+            if (!ok.phone) missing.push('số điện thoại');
+            if (!ok.desc) missing.push('mô tả tình trạng');
+            if (!ok.geo) missing.push('bấm \"Gửi định vị\"');
+            const h = el('submit-hint');
+            h.hidden = ready;
+            h.textContent = missing.length ? 'Cần hoàn thành: ' + missing.join(', ') + ' để gửi.' : '';
+        }
+        el('full-name').addEventListener('input', () => { if (nameOk()) el('grp-name').classList.remove('invalid'); refreshSteps(); });
+        el('full-name').addEventListener('blur', () => { const v = el('full-name').value.trim(); el('grp-name').classList.toggle('invalid', !!v && !nameOk()); });
+        el('phone-number').addEventListener('input', () => { if (phoneOk()) el('grp-phone').classList.remove('invalid'); refreshSteps(); });
+        el('phone-number').addEventListener('blur', () => { const v = el('phone-number').value.trim(); el('grp-phone').classList.toggle('invalid', !!v && !phoneOk()); });
+        el('sos-text').addEventListener('input', refreshSteps);
+
+        /* ---------- ĐỊNH VỊ THẬT (GPS / Geolocation API) ---------- */
+        function setGeoBtn(state) {
+            const b = el('btn-gps'), ic = b.querySelector('i'), tx = b.querySelector('span');
+            b.classList.toggle('done', state === 'done');
+            b.disabled = state === 'loading';
+            if (state === 'loading') { ic.className = 'fa-solid fa-spinner fa-spin'; tx.textContent = 'Đang lấy vị trí chính xác...'; }
+            else if (state === 'done') { ic.className = 'fa-solid fa-circle-check'; tx.textContent = 'Đã gửi định vị · bấm để cập nhật lại'; }
+            else { ic.className = 'fa-solid fa-location-crosshairs'; tx.textContent = 'Gửi định vị'; }
+        }
+        function showGeoInfo(html, isNode) { const g = el('geo-info'); g.hidden = false; g.replaceChildren(); if (isNode) g.append(html); else g.textContent = html; }
+        function showGeoAlert(title, text) { el('geo-alert-title').textContent = title; el('geo-alert-text').textContent = text; el('geo-alert').hidden = false; }
+        function stopGeoWatch() {
+            if (geoWatch !== null) { navigator.geolocation.clearWatch(geoWatch); geoWatch = null; }
+            if (geoTimer) { clearTimeout(geoTimer); geoTimer = null; }
+        }
+        function geoErrorMessage(err) {
+            if (err.code === 1) {
+                return isMobile
+                    ? ['Chưa truy cập được vị trí', 'Hãy bật Vị trí (GPS) trên điện thoại: vuốt thanh thông báo xuống và bật "Vị trí", hoặc vào Cài đặt › Vị trí. Sau đó cho phép trình duyệt dùng vị trí khi được hỏi (Cài đặt › Quyền của trình duyệt › Vị trí › Cho phép).']
+                    : ['Bạn đã chặn quyền vị trí', 'Bấm biểu tượng ổ khóa cạnh thanh địa chỉ › Vị trí › Cho phép, rồi bấm Thử lại.'];
+            }
+            if (err.code === 2) {
+                return isMobile
+                    ? ['Vị trí của điện thoại đang tắt hoặc không có tín hiệu', 'Hãy bật Vị trí (GPS) ở thanh thông báo hoặc Cài đặt, ra nơi thoáng rồi bấm Thử lại.']
+                    : ['Không xác định được vị trí', 'Hãy kiểm tra dịch vụ vị trí của hệ điều hành đã bật chưa và máy có kết nối Wi-Fi/mạng, rồi bấm Thử lại.'];
+            }
+            return ['Quá thời gian chờ định vị', 'Chưa nhận được tín hiệu GPS. Hãy ra nơi thoáng, bật Vị trí chế độ độ chính xác cao rồi bấm Thử lại.'];
+        }
+        function getLocation() {
+            el('geo-alert').hidden = true;
+            if (!('geolocation' in navigator)) { showGeoAlert('Thiết bị không hỗ trợ định vị', 'Hãy mở trang bằng Chrome hoặc Safari bản mới.'); return; }
+            if (!window.isSecureContext) { showGeoAlert('Trang chưa chạy ở chế độ bảo mật', 'Trình duyệt chỉ cho phép định vị khi trang chạy trên HTTPS hoặc localhost.'); return; }
+            stopGeoWatch(); geo = null; refreshSteps(); setGeoBtn('loading');
+            el('geo-info').hidden = true;
+            let best = null, finished = false;
+
+            const finish = () => {
+                if (finished) return; finished = true; stopGeoWatch();
+                if (best && best.accuracy <= MAX_ACCURACY_M) {
+                    geo = best; setGeoBtn('done');
+                    const q = best.accuracy <= GOOD_ACCURACY_M ? 'rất chính xác' : best.accuracy <= 100 ? 'chính xác' : 'tương đối';
+                    const box = document.createElement('span');
+                    box.append(document.createTextNode('Vĩ độ '), Object.assign(document.createElement('b'), { textContent: best.lat.toFixed(6) }),
+                        document.createTextNode(' · Kinh độ '), Object.assign(document.createElement('b'), { textContent: best.lng.toFixed(6) }),
+                        document.createTextNode(' · sai số ≈ ' + Math.round(best.accuracy) + ' m (' + q + ')'));
+                    showGeoInfo(box, true);
+                } else {
+                    setGeoBtn('idle'); el('geo-info').hidden = true;
+                    showGeoAlert('Vị trí chưa đủ chính xác', 'Thiết bị chỉ xác định được vị trí với sai số khoảng ' + Math.round(best.accuracy) + ' m. Hãy bật GPS / chế độ độ chính xác cao, ra nơi thoáng rồi bấm Thử lại.');
+                }
+                refreshSteps();
+            };
+
+            geoWatch = navigator.geolocation.watchPosition(pos => {
+                const c = pos.coords;
+                if (!best || c.accuracy < best.accuracy) best = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy, ts: Date.now() };
+                showGeoInfo('Đang tinh chỉnh vị trí... sai số hiện tại ≈ ' + Math.round(best.accuracy) + ' m');
+                if (!geoTimer) geoTimer = setTimeout(finish, GEO_REFINE_MS); // đếm giờ sau khi đã có tín hiệu đầu tiên (không tính lúc chờ người dùng bấm Cho phép)
+                if (best.accuracy <= GOOD_ACCURACY_M) finish();
+            }, err => {
+                if (finished) return;
+                if (best) { finish(); return; }
+                finished = true; stopGeoWatch(); setGeoBtn('idle'); el('geo-info').hidden = true;
+                const [t, m] = geoErrorMessage(err);
+                showGeoAlert(t, m);
+                if (isMobile && err.code !== 3) toast('Vui lòng bật vị trí (GPS) trên điện thoại rồi bấm lại.', true);
+                refreshSteps();
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+        }
+
+        /* ---------- HÌNH ẢNH (nén trước khi lưu) ---------- */
+        function pickPhoto() {
+            if (photos.length >= MAX_PHOTOS) { toast('Tối đa ' + MAX_PHOTOS + ' ảnh cho mỗi yêu cầu.', true); return; }
+            el('photo-input').click();
+        }
+        function compressImage(file, maxSide = 800, quality = 0.65) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file), img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, maxSide / Math.max(img.width, img.height));
+                    const cv = document.createElement('canvas');
+                    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                    URL.revokeObjectURL(url); resolve(cv.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); };
+                img.src = url;
+            });
+        }
+        el('photo-input').addEventListener('change', async e => {
+            const files = Array.from(e.target.files).slice(0, MAX_PHOTOS - photos.length);
+            for (const f of files) {
+                try { photos.push(await compressImage(f)); } catch (err) { toast('Không đọc được một ảnh, vui lòng chọn ảnh khác.', true); }
+            }
+            e.target.value = ''; renderThumbs();
+        });
+        function renderThumbs() {
+            const box = el('thumbs'); box.replaceChildren();
+            photos.forEach((src, i) => {
+                const t = document.createElement('div'), im = document.createElement('img'), x = document.createElement('button');
+                t.className = 'thumb'; im.src = src; im.alt = 'Ảnh đính kèm ' + (i + 1);
+                x.type = 'button'; x.setAttribute('aria-label', 'Xóa ảnh ' + (i + 1)); x.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                x.onclick = () => { photos.splice(i, 1); renderThumbs(); };
+                t.append(im, x); box.append(t);
+            });
+            el('photo-label').textContent = photos.length ? 'Hình ảnh (' + photos.length + '/' + MAX_PHOTOS + ')' : 'Hình ảnh';
+            el('btn-photo').classList.toggle('active', photos.length > 0);
+        }
+
+        /* ---------- GIỌNG NÓI → CHỮ, GHI NỐI VÀO Ô MÔ TẢ ---------- */
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognizer = null, listening = false;
+        function setVoiceUI(on) {
+            el('btn-voice').classList.toggle('listening', on);
+            el('btn-voice').querySelector('.ic-mic').style.display = on ? 'none' : '';
+            el('btn-voice').querySelector('.ic-stop').style.display = on ? '' : 'none';
+            el('voice-label').textContent = on ? 'Đang ghi âm - bấm để dừng' : 'Bấm để bắt đầu ghi âm';
+            el('voice-live').hidden = !on;
+        }
+        function toggleVoice() {
+            if (listening) { stopVoice(); return; }
+            if (!SpeechRec) { toast('Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Hãy dùng Chrome hoặc Safari bản mới.', true); return; }
+            listening = true; setVoiceUI(true); startRecognizer();
+        }
+        function startRecognizer() {
+            const ta = el('sos-text');
+            let base = ta.value.trim();
+            const r = new SpeechRec();
+            r.lang = 'vi-VN'; r.continuous = true; r.interimResults = true;
+            r.onresult = e => {
+                let interim = '', fin = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    const t = e.results[i][0].transcript;
+                    if (e.results[i].isFinal) fin += t; else interim += t;
+                }
+                if (fin) base = (base + ' ' + fin.trim()).trim();
+                ta.value = (base + ' ' + interim).trim();
+                refreshSteps();
+            };
+            r.onerror = e => {
+                if (e.error === 'no-speech' || e.error === 'aborted') return;
+                listening = false;
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Chưa được cấp quyền micro. Hãy cho phép micro trong cài đặt trình duyệt.', true);
+                else if (e.error === 'network') toast('Nhận diện giọng nói cần kết nối mạng.', true);
+                else if (e.error === 'audio-capture') toast('Không tìm thấy micro trên thiết bị.', true);
+                else toast('Không nhận diện được giọng nói, vui lòng thử lại.', true);
+            };
+            r.onend = () => {
+                if (listening) { try { startRecognizer(); } catch (err) { listening = false; setVoiceUI(false); } }
+                else setVoiceUI(false);
+            };
+            recognizer = r;
+            try { r.start(); } catch (err) { listening = false; setVoiceUI(false); }
+        }
+        function stopVoice() {
+            listening = false;
+            if (recognizer) { try { recognizer.stop(); } catch (e) {} }
+            setVoiceUI(false);
+        }
+
+        /* ---------- GỬI SOS: dùng đúng tọa độ GPS đã lấy ---------- */
+        function submitSOS() {
+            const desc = el('sos-text').value.trim();
+            if (!nameOk()) { el('grp-name').classList.add('invalid'); el('full-name').focus(); toast('Vui lòng nhập họ và tên.', true); return; }
+            if (!phoneOk()) { el('grp-phone').classList.add('invalid'); el('phone-number').focus(); toast('Vui lòng nhập số điện thoại hợp lệ.', true); return; }
+            if (!desc) { el('sos-text').focus(); toast('Vui lòng mô tả tình trạng.', true); return; }
+            if (!geo) { toast('Vui lòng bấm "Gửi định vị" để gửi vị trí của bạn.', true); return; }
+            if (Date.now() - geo.ts > GEO_STALE_MS) {
+                geo = null; setGeoBtn('idle'); el('geo-info').hidden = true; refreshSteps();
+                toast('Vị trí đã cũ, vui lòng bấm "Gửi định vị" lại để cập nhật.', true); return;
+            }
+            stopVoice();
+            const a = assessSOS(desc);
+            const rec = {
+                id: Date.now(), name: el('full-name').value.trim().replace(/\s+/g, ' '), phone: cleanPhone(el('phone-number').value.trim()), desc, status: a.status,
+                lat: geo.lat, lng: geo.lng, accuracy: Math.round(geo.accuracy), images: photos.slice()
+            };
+            if (isOnline) {
+                sosList.push(rec); saveJSON(SOS_KEY, sosList);
+                showSOS(rec);
+                toast('Đã gửi SOS · AI đánh giá: ' + LEVELS[rec.status].name);
+            } else {
+                pendingList.push(rec); saveJSON(PENDING_KEY, pendingList);
+                toast('Đang offline: đã lưu gói tin (' + LEVELS[rec.status].short + '), sẽ tự đồng bộ khi có mạng.');
+            }
+            el('full-name').value = ''; el('phone-number').value = ''; el('sos-text').value = '';
+            geo = null; photos = []; renderThumbs(); setGeoBtn('idle'); el('geo-info').hidden = true; el('geo-alert').hidden = true;
+            refreshSteps();
+        }
+        refreshSteps();
+    </script>
+</body>
+</html>
